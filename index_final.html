@@ -37,7 +37,10 @@ Promise.all([
 ]).then(([worldData, contestants, artistsSongs, flowData, scoresWide]) => {
   appData = { worldData, contestants, artistsSongs, flowData, scoresWide };
   setupControls();
-  updateAll(true);
+
+  requestAnimationFrame(() => {
+    updateAll(true);
+  });
 });
 
 function setupControls(){
@@ -49,6 +52,12 @@ function setupControls(){
   d3.select("#enter-btn").on("click", () => d3.select("#overlay").classed("show", false));
   d3.select("#overlay").on("click", (event) => { if(event.target.id === "overlay") d3.select("#overlay").classed("show", false); });
 }
+
+const ro = new ResizeObserver(() => {
+  if (appData) updateAll(false);
+});
+
+ro.observe(document.getElementById("map-svg-wrap"));
 
 function updateAll(reset=false){
   renderMap(appData.worldData, appData.contestants, appData.artistsSongs, reset);
@@ -79,8 +88,10 @@ function showYoutube(entry, artistSong){
 function renderMap(worldData, contestants, artistsSongs, resetSelection){
   if(resetSelection) selectedCountry = null;
   const wrap = document.getElementById("map-svg-wrap");
-  const width = Math.max(520, wrap.clientWidth || 760);
-  const height = Math.max(360, wrap.clientHeight || 420);
+  const width = wrap.clientWidth;
+  const height = wrap.clientHeight;
+
+  if (!width || !height) return;
   d3.select("#map-svg").selectAll("*").remove();
   d3.select("body").selectAll(".tooltip").remove();
   const svg = d3.select("#map-svg").attr("viewBox", [0,0,width,height]);
