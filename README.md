@@ -9,8 +9,6 @@ An interactive data visualization project exploring **jury vs. public voting div
 | File | Years | Description |
 |------|-------|-------------|
 | `eurovision_parallel_2016_2023.html` | 2016–2023 | Parallel coordinates — jury pts vs public pts |
-| `eurovision_parallel_2000_2015.html` | 2000–2015 | Parallel coordinates — jury pts vs raw public votes |
-| `eurovision_map.html` | 2000–2015 | Choropleth map with inbound/outbound vote sidebar |
 
 ---
 
