@@ -170,6 +170,39 @@ function showYoutube(entry, artistSong) {
   );
 }
 
+function showYoutubeForCountry(country) {
+  const contestants = appData.contestants;
+  const artistsSongs = appData.artistsSongs;
+
+  const finalistsRaw = contestants.filter(
+    (d) =>
+      +d.year === selectedYear &&
+      d.to_country === country &&
+      d.place_final != null &&
+      d.place_final !== "" &&
+      !isNaN(+d.place_final),
+  );
+  if (!finalistsRaw.length) return;
+
+  const row = finalistsRaw[0];
+  const entry = {
+    country: row.to_country,
+    youtube_url: row.youtube_url,
+    place_final: +row.place_final,
+  };
+
+  const artistSongMap = d3.rollup(
+    artistsSongs,
+    (v) => v[0],
+    (d) => +d.year,
+    (d) => d.country,
+  );
+  const artistSong = (artistSongMap.get(selectedYear) || new Map()).get(
+    country,
+  );
+  showYoutube(entry, artistSong);
+}
+
 function renderMap(worldData, contestants, artistsSongs, resetSelection) {
   if (resetSelection) selectedCountry = null;
   const wrap = document.getElementById("map-svg-wrap");
@@ -509,7 +542,9 @@ function renderChord(data) {
     .style("cursor", "pointer")
     .on("click", function (event, d) {
       event.stopPropagation();
-      selectCountry(countries[d.source.index]);
+      const country = countries[d.source.index];
+      showYoutubeForCountry(country);
+      selectCountry(country);
     });
 
   ribbons.append("title").text(
@@ -528,7 +563,9 @@ Points: ${d.target.value}`,
     .style("cursor", "pointer")
     .on("click", function (event, d) {
       event.stopPropagation();
-      selectCountry(countries[d.index]);
+      const country = countries[d.index];
+      showYoutubeForCountry(country);
+      selectCountry(country);
     });
 
   group
@@ -882,6 +919,7 @@ function renderParallel(scoresWide, contestants) {
 
     function selectThis(event) {
       event.stopPropagation();
+      showYoutubeForCountry(d.country);
       selectCountry(d.country);
     }
 
