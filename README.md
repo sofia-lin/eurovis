@@ -138,7 +138,7 @@ This visualization helps uncover:
 
 - **2020 is excluded** (contest canceled due to COVID-19)  
 - Only **Grand Final countries** are included in the visualizations  
-- Country names are normalized (e.g., Czech Republic → Czechia)  
+- Country names are normalized (e.g., Czech Republic to Czechia)  
 
 ---
 
