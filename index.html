@@ -188,7 +188,7 @@ body {
 <!-- Header -->
 <div id="header">
   <div id="header-left">
-    <div class="eyebrow">2000 — 2015</div>
+    <div class="eyebrow">2016 - 2023</div>
     <h1>Eurovision Voting</h1>
     <p>Visualizing jury voting flows, public vote, and map across Eurovision finals</p>
   </div>
@@ -224,7 +224,7 @@ body {
         <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/>
         </svg>
-        <p>Click a country on the map<br>or chord diagram to preview<br>their Eurovision performance</p>
+        <p>Click a country to preview<br>their Eurovision performance</p>
       </div>
       <div id="yt-content" style="display:none"></div>
     </div>
@@ -302,7 +302,7 @@ const REGIONS_ORDER = ["Northern Europe","Western Europe","Southern Europe","Cen
 const REGION_COLOR = d3.scaleOrdinal().domain(REGIONS_ORDER)
   .range(["#aec7e8","#ffbb78","#ff9896","#9edae5","#98df8a","#f7e6a1","#c5b0d5"]);
 
-let currentYear = 2000;
+let currentYear = 2016;
 let selectedCountry = null;
 let worldTopo = null;
 
