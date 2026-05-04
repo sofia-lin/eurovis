@@ -22,7 +22,7 @@
 </div>
 <div id="overlay"><div id="overlay-box"><div class="eyebrow">2016 – 2023</div><h2>How Eurovision Voting Works</h2><p>The Eurovision Song Contest is an annual international music competition. In the grand final, each country presents one act, and the winner is decided through votes from national juries and the public.</p><h3>How Voting Works in the Eurovision Final</h3><p><em>Note: In 2020, the contest was not held due to COVID-19.</em></p><ol><li><strong>Professional Jury Votes</strong><br>Each country has a jury of music industry professionals. Their top 10 songs receive 1–12 points.</li><li><strong>Public Televote</strong><br>Viewers vote by phone, app, or SMS. Their top 10 songs also receive 1–12 points.</li></ol><p>The final score combines jury and public points, making it possible to compare expert and audience preferences.</p><button class="enter-btn" id="enter-btn">Enter Visualization →</button></div></div>
 <script>
-const YEARS = d3.range(2016, 2024);
+const YEARS = [2016, 2017, 2018, 2019, 2021, 2022, 2023];
 const regionsOrder = ["Northern Europe", "Western Europe", "Southern Europe", "Central Europe", "Eastern Europe", "Southeastern Europe", "Other"];
 const regionColors = ["#aec7e8", "#ffbb78", "#ff9896", "#9edae5", "#98df8a", "#f7e6a1", "#c5b0d5"];
 const europeNames = new Set(["Albania","Armenia","Andorra","Austria","Azerbaijan","Belarus","Belgium","Bosnia and Herzegovina","Bulgaria","Croatia","Czech Republic","Czechia","Denmark","Estonia","Finland","France","Germany","Georgia","Greece","Hungary","Iceland","Ireland","Israel","Italy","Latvia","Lithuania","Luxembourg","Malta","Moldova","Monaco","Montenegro","Morocco","Netherlands","North Macedonia","Norway","Poland","Portugal","Romania","Russia","San Marino","Serbia","Slovakia","Slovenia","Spain","Sweden","Switzerland","Turkey","Ukraine","United Kingdom","Vatican","Vatican City","Kosovo"]);
@@ -65,6 +65,11 @@ function updateAll(reset=false){
   renderMap(appData.worldData, appData.contestants, appData.artistsSongs, reset);
   renderChord(appData.flowData);
   renderParallel(appData.scoresWide, appData.contestants);
+}
+
+function selectCountry(country){
+  selectedCountry = selectedCountry === country ? null : country;
+  updateAll(false);
 }
 
 function countryKey(name){
@@ -135,7 +140,7 @@ function renderMap(worldData, contestants, artistsSongs, resetSelection){
       .on("mouseover", function(event,d){ const entry=getEntry(d); if(!entry) return; const as=getArtistSong(entry.country); d3.select(this).attr("stroke","#222").attr("stroke-width",2); tooltip.style("visibility","visible").html(`<strong>${entry.country}</strong><br>Singer: ${as?.artist || "N/A"}<br>Song: ${as?.song || "N/A"}<br>Final place: ${entry.place_final}`); })
       .on("mousemove", event => tooltip.style("top", `${event.pageY+12}px`).style("left", `${event.pageX+12}px`))
       .on("mouseout", function(event,d){ const entry=getEntry(d), name=getName(d); d3.select(this).attr("fill", countryFill(entry,name)).attr("stroke", name===selectedCountry?"#08306b":"#fff").attr("stroke-width", name===selectedCountry?2.5:.8); tooltip.style("visibility","hidden"); })
-      .on("click", function(event,d){ const entry=getEntry(d); if(!entry) return; const clicked=getName(d); selectedCountry = selectedCountry === clicked ? null : clicked; showYoutube(entry, getArtistSong(entry.country)); renderMap(worldData, contestants, artistsSongs, false); });
+      .on("click", function(event,d){ const entry = getEntry(d); if(!entry) return; showYoutube(entry, getArtistSong(entry.country)); selectCountry(entry.country);});
   }
 
   const mapCountries = mapGroup.selectAll("path.country").data(mapData.features).join("path").attr("class","country").attr("d",path);
@@ -150,31 +155,143 @@ function renderMap(worldData, contestants, artistsSongs, resetSelection){
 function renderChord(data){
   const wrap = document.getElementById("chord-wrap");
   d3.select(wrap).selectAll("*").remove();
+
   const filteredData = data.filter(d => +d.year === selectedYear && +d.points > 0);
+
   const countryRegion = new Map();
-  for(const d of data){ if(d.to_country && d.to_region) countryRegion.set(d.to_country, d.to_region); }
+  for(const d of data){
+    if(d.to_country && d.to_region) countryRegion.set(d.to_country, d.to_region);
+    if(d.from_country && d.from_region) countryRegion.set(d.from_country, d.from_region);
+  }
+
   const countries = Array.from(new Set(filteredData.flatMap(d => [d.from_country, d.to_country]))).sort((a,b)=>{
-    const ra = countryRegion.get(a) ?? "Other", rb = countryRegion.get(b) ?? "Other";
+    const ra = countryRegion.get(a) ?? "Other";
+    const rb = countryRegion.get(b) ?? "Other";
     return (regionsOrder.indexOf(ra) - regionsOrder.indexOf(rb)) || d3.ascending(a,b);
   });
+
   const index = new Map(countries.map((d,i)=>[d,i]));
   const matrix = Array.from({length:countries.length}, () => Array(countries.length).fill(0));
-  for(const d of filteredData){ const i=index.get(d.from_country), j=index.get(d.to_country); if(i!==undefined && j!==undefined) matrix[i][j] += +d.points; }
-  const width=720, height=720, outerRadius=Math.min(width,height)*.5-88, innerRadius=outerRadius-18;
-  const svg = d3.create("svg").attr("viewBox",[-width/2,-height/2,width,height]).attr("width",width).attr("height",height).style("font","9px sans-serif");
+
+  for(const d of filteredData){
+    const i = index.get(d.from_country);
+    const j = index.get(d.to_country);
+    if(i !== undefined && j !== undefined) matrix[i][j] += +d.points;
+  }
+
+  const width = 720;
+  const height = 720;
+  const outerRadius = Math.min(width,height) * .5 - 88;
+  const innerRadius = outerRadius - 18;
+
+  const svg = d3.create("svg")
+    .attr("viewBox",[-width/2,-height/2,width,height])
+    .attr("width",width)
+    .attr("height",height)
+    .style("font","9px sans-serif")
+    .on("click", () => {
+      selectedCountry = null;
+      updateAll(false);
+    });
+
   const color = d3.scaleOrdinal().domain(regionsOrder).range(regionColors);
-  const chord = d3.chord().padAngle(.035).sortSubgroups(d3.descending).sortChords(d3.descending)(matrix);
+
+  const chord = d3.chord()
+    .padAngle(.035)
+    .sortSubgroups(d3.descending)
+    .sortChords(d3.descending)(matrix);
+
   const arc = d3.arc().innerRadius(innerRadius).outerRadius(outerRadius);
   const ribbon = d3.ribbon().radius(innerRadius);
   const nodeRegion = name => countryRegion.get(name) ?? "Other";
-  svg.append("text").attr("x",0).attr("y",-height/2+24).attr("text-anchor","middle").style("font-size","16px").style("font-weight","bold").text(`Eurovision Jury Voting Flows — ${selectedYear}`);
-  svg.append("g").attr("fill-opacity",.5).selectAll("path").data(chord).join("path").attr("d",ribbon).attr("fill",d=>color(nodeRegion(countries[d.source.index]))).attr("stroke",d=>d3.rgb(color(nodeRegion(countries[d.source.index]))).darker()).append("title").text(d=>`${countries[d.source.index]} → ${countries[d.target.index]}\nPoints: ${d.source.value}\n\n${countries[d.target.index]} → ${countries[d.source.index]}\nPoints: ${d.target.value}`);
-  const group = svg.append("g").selectAll("g").data(chord.groups).join("g");
-  group.append("path").attr("fill",d=>color(nodeRegion(countries[d.index]))).attr("stroke",d=>d3.rgb(color(nodeRegion(countries[d.index]))).darker()).attr("d",arc).append("title").text(d=>`${countries[d.index]}\nRegion: ${nodeRegion(countries[d.index])}\nTotal points: ${d.value}`);
-  group.append("text").each(d=>d.angle=(d.startAngle+d.endAngle)/2).attr("dy",".35em").attr("transform",d=>`rotate(${d.angle*180/Math.PI-90}) translate(${outerRadius+6}) ${d.angle>Math.PI?"rotate(180)":""}`).attr("text-anchor",d=>d.angle>Math.PI?"end":"start").text(d=>countries[d.index]);
-  const legend = svg.append("g").attr("transform",`translate(${-width/2+22},${-height/2+50})`);
-  legend.selectAll("rect").data(regionsOrder).join("rect").attr("x",0).attr("y",(d,i)=>i*18).attr("width",12).attr("height",12).attr("fill",d=>color(d));
-  legend.selectAll("text").data(regionsOrder).join("text").attr("x",18).attr("y",(d,i)=>i*18+10).style("font-size","11px").text(d=>d);
+
+  svg.append("text")
+    .attr("x",0)
+    .attr("y",-height/2+24)
+    .attr("text-anchor","middle")
+    .style("font-size","16px")
+    .style("font-weight","bold")
+    .text(`Eurovision Jury Voting Flows — ${selectedYear}`);
+
+  const ribbons = svg.append("g")
+    .selectAll("path")
+    .data(chord)
+    .join("path")
+    .attr("d", ribbon)
+    .attr("fill", d => color(nodeRegion(countries[d.source.index])))
+    .attr("stroke", d => d3.rgb(color(nodeRegion(countries[d.source.index]))).darker())
+    .attr("fill-opacity", d => {
+      if(!selectedCountry) return .45;
+      return countries[d.source.index] === selectedCountry || countries[d.target.index] === selectedCountry ? .85 : .05;
+    })
+    .attr("stroke-opacity", d => {
+      if(!selectedCountry) return .7;
+      return countries[d.source.index] === selectedCountry || countries[d.target.index] === selectedCountry ? .9 : .04;
+    })
+    .style("cursor", "pointer")
+    .on("click", function(event, d){
+      event.stopPropagation();
+      selectCountry(countries[d.source.index]);
+    });
+
+  ribbons.append("title")
+    .text(d => `${countries[d.source.index]} → ${countries[d.target.index]}
+Points: ${d.source.value}
+
+${countries[d.target.index]} → ${countries[d.source.index]}
+Points: ${d.target.value}`);
+
+  const group = svg.append("g")
+    .selectAll("g")
+    .data(chord.groups)
+    .join("g")
+    .style("cursor", "pointer")
+    .on("click", function(event, d){
+      event.stopPropagation();
+      selectCountry(countries[d.index]);
+    });
+
+  group.append("path")
+    .attr("fill", d => color(nodeRegion(countries[d.index])))
+    .attr("stroke", d => selectedCountry === countries[d.index] ? "#111827" : d3.rgb(color(nodeRegion(countries[d.index]))).darker())
+    .attr("stroke-width", d => selectedCountry === countries[d.index] ? 2.5 : 1)
+    .attr("opacity", d => !selectedCountry || selectedCountry === countries[d.index] ? 1 : .25)
+    .attr("d", arc)
+    .append("title")
+    .text(d => `${countries[d.index]}
+Region: ${nodeRegion(countries[d.index])}
+Total points: ${d.value}`);
+
+  group.append("text")
+    .each(d => d.angle = (d.startAngle + d.endAngle) / 2)
+    .attr("dy",".35em")
+    .attr("transform", d => `rotate(${d.angle * 180 / Math.PI - 90}) translate(${outerRadius + 6}) ${d.angle > Math.PI ? "rotate(180)" : ""}`)
+    .attr("text-anchor", d => d.angle > Math.PI ? "end" : "start")
+    .attr("fill", d => selectedCountry === countries[d.index] ? "#111827" : "#374151")
+    .attr("font-weight", d => selectedCountry === countries[d.index] ? 700 : 400)
+    .attr("opacity", d => !selectedCountry || selectedCountry === countries[d.index] ? 1 : .3)
+    .text(d => countries[d.index]);
+
+  const legend = svg.append("g")
+    .attr("transform",`translate(${-width/2+22},${-height/2+50})`);
+
+  legend.selectAll("rect")
+    .data(regionsOrder)
+    .join("rect")
+    .attr("x",0)
+    .attr("y",(d,i)=>i*18)
+    .attr("width",12)
+    .attr("height",12)
+    .attr("fill",d=>color(d));
+
+  legend.selectAll("text")
+    .data(regionsOrder)
+    .join("text")
+    .attr("x",18)
+    .attr("y",(d,i)=>i*18+10)
+    .style("font-size","11px")
+    .text(d=>d);
+
   wrap.appendChild(svg.node());
 }
 
@@ -202,8 +319,8 @@ function renderParallel(scoresWide, contestants){
   for(const [x,label,fill,italic] of [[xJ,"JURY POINTS","#2563eb",false],[xM,"COUNTRIES","#6b7280",true],[xT,"PUBLIC POINTS","#059669",false]]) svg.append("text").attr("x",x).attr("y",M.top-22).attr("text-anchor","middle").attr("fill",fill).attr("font-size",10).attr("font-weight",700).attr("letter-spacing",".09em").attr("font-style",italic?"italic":"normal").text(label);
   const g=svg.append("g"), refs=new Map();
   function applySelection(sel){ for(const [country,r] of refs){ const isSelected=sel===country, isFaded=sel!==null&&!isSelected; r.pathL.attr("stroke-width",isSelected?3:r.sw).attr("opacity",isFaded?.07:isSelected?1:r.op); r.pathR.attr("stroke-width",isSelected?3:r.sw).attr("opacity",isFaded?.07:isSelected?1:r.op); r.dJ.attr("r",isSelected?5:3.5).attr("opacity",isFaded?.1:isSelected?1:.55); r.dT.attr("r",isSelected?5:3.5).attr("opacity",isFaded?.1:isSelected?1:.55); r.dM.attr("r",isSelected?5.5:4).attr("opacity",isFaded?.1:isSelected?1:.7); r.lbl.attr("fill",isFaded?"#c8d0dc":isSelected?r.c:"#374151").attr("font-weight",isSelected?700:null); }}
-  svg.on("click",()=>{selectedCountry=null;applySelection(null);});
-  for(const d of rows){ const jy=yScale(d.jury), ty=yScale(d.tele), my=midY.get(d.country), c=colFn(d), isExtreme=Math.abs(d.bias)>100, sw=isExtreme?2:1.2, op=isExtreme?.72:.38; const ptsL=[[xJ,jy],[xJ+(xM-xJ)*.38,jy],[xJ+(xM-xJ)*.62,my],[xM,my]], ptsR=[[xM,my],[xM+(xT-xM)*.38,my],[xM+(xT-xM)*.62,ty],[xT,ty]]; const pathL=g.append("path").datum(ptsL).attr("d",curve).attr("fill","none").attr("stroke",c).attr("stroke-width",sw).attr("opacity",op); const pathR=g.append("path").datum(ptsR).attr("d",curve).attr("fill","none").attr("stroke",c).attr("stroke-width",sw).attr("opacity",op); const dJ=g.append("circle").attr("cx",xJ).attr("cy",jy).attr("r",3.5).attr("fill","#2563eb").attr("opacity",.55); const dT=g.append("circle").attr("cx",xT).attr("cy",ty).attr("r",3.5).attr("fill","#059669").attr("opacity",.55); const dM=g.append("circle").attr("cx",xM).attr("cy",my).attr("r",4).attr("fill",c).attr("opacity",.7); const lbl=g.append("text").attr("x",xM+8).attr("y",my+3.5).attr("fill","#374151").attr("font-size",rows.length>25?8:9).text(d.country).style("cursor","pointer"); refs.set(d.country,{pathL,pathR,dJ,dT,dM,lbl,sw,op,c}); function selectThis(event){ event.stopPropagation(); selectedCountry = selectedCountry===d.country?null:d.country; applySelection(selectedCountry); } for(const pts of [ptsL,ptsR]) g.append("path").datum(pts).attr("d",curve).attr("fill","none").attr("stroke","transparent").attr("stroke-width",14).style("cursor","pointer").on("click",selectThis).on("mouseenter",()=>applySelection(d.country)).on("mouseleave",()=>applySelection(selectedCountry)); lbl.on("click",selectThis).on("mouseenter",()=>applySelection(d.country)).on("mouseleave",()=>applySelection(selectedCountry)); }
+  svg.on("click", () => {selectedCountry = null; updateAll(false);});function selectThis(event){event.stopPropagation(); selectCountry(d.country);}
+  for(const d of rows){ const jy=yScale(d.jury), ty=yScale(d.tele), my=midY.get(d.country), c=colFn(d), isExtreme=Math.abs(d.bias)>100, sw=isExtreme?2:1.2, op=isExtreme?.72:.38; const ptsL=[[xJ,jy],[xJ+(xM-xJ)*.38,jy],[xJ+(xM-xJ)*.62,my],[xM,my]], ptsR=[[xM,my],[xM+(xT-xM)*.38,my],[xM+(xT-xM)*.62,ty],[xT,ty]]; const pathL=g.append("path").datum(ptsL).attr("d",curve).attr("fill","none").attr("stroke",c).attr("stroke-width",sw).attr("opacity",op); const pathR=g.append("path").datum(ptsR).attr("d",curve).attr("fill","none").attr("stroke",c).attr("stroke-width",sw).attr("opacity",op); const dJ=g.append("circle").attr("cx",xJ).attr("cy",jy).attr("r",3.5).attr("fill","#2563eb").attr("opacity",.55); const dT=g.append("circle").attr("cx",xT).attr("cy",ty).attr("r",3.5).attr("fill","#059669").attr("opacity",.55); const dM=g.append("circle").attr("cx",xM).attr("cy",my).attr("r",4).attr("fill",c).attr("opacity",.7); const lbl=g.append("text").attr("x",xM+8).attr("y",my+3.5).attr("fill","#374151").attr("font-size",rows.length>25?8:9).text(d.country).style("cursor","pointer"); refs.set(d.country,{pathL,pathR,dJ,dT,dM,lbl,sw,op,c});  for(const pts of [ptsL,ptsR]) g.append("path").datum(pts).attr("d",curve).attr("fill","none").attr("stroke","transparent").attr("stroke-width",14).style("cursor","pointer").on("click",selectThis).on("mouseenter",()=>applySelection(d.country)).on("mouseleave",()=>applySelection(selectedCountry)); lbl.on("click",selectThis).on("mouseenter",()=>applySelection(d.country)).on("mouseleave",()=>applySelection(selectedCountry)); }
   applySelection(selectedCountry);
 }
 
