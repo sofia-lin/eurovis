@@ -282,20 +282,17 @@ function renderMap(worldData, contestants, artistsSongs, resetSelection) {
   const mapGroup = svg.append("g");
   const australiaInsetGroup = svg
     .append("g")
-    .attr("transform", `translate(${width * 0.27}, ${height * 0.09})`);
+    .attr("transform", `translate(${width * 0.20}, ${height * 0.10})`);
   const maltaInsetGroup = svg
     .append("g")
     .attr("transform", `translate(${width * 0.5}, ${height * 0.88})`);
-  const ausW = 135,
-    ausH = 90,
+  const ausW = 160,
+    ausH = 130,
     malW = 55,
     malH = 35;
   const australiaProjection = d3.geoMercator().fitExtent(
-    [
-      [9, 9],
-      [ausW - 9, ausH - 9],
-    ],
-    australiaData,
+  [[4, 4], [ausW - 4, ausH - 4]],
+  australiaData,
   );
   const australiaPath = d3.geoPath(australiaProjection);
   const maltaProjection = d3.geoMercator();
