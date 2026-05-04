@@ -1,83 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>EuroVis · Eurovision Voting 2016–2023</title>
-<script src="https://d3js.org/d3.v7.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<style>
-*{box-sizing:border-box;margin:0;padding:0}body{font-family:Inter,sans-serif;background:#f0f2f5;color:#111827;min-height:100vh}#header{background:#111827;color:white;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;gap:20px}#header-left .eyebrow{font-size:.72rem;letter-spacing:.1em;color:#9ca3af;margin-bottom:3px}#header-left h1{font-size:1.45rem;font-weight:700;letter-spacing:-.4px}#header-left p{font-size:.8rem;color:#e5e7eb;margin-top:2px}#header-right{display:flex;align-items:center;gap:12px}.year-select{appearance:none;background:whitesmoke(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:7px 14px;font-family:Inter,sans-serif;font-size:.85rem;font-weight:500;color:black;cursor:pointer}.how-btn{background:white;color:#111827;border:none;border-radius:999px;padding:8px 16px;font-family:Inter,sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;white-space:nowrap}.how-btn:hover{background:#f3f4f6}
-#grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto;gap:14px;padding:14px;min-height:calc(100vh - 80px)}
-.panel{background:white;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden;display:flex;flex-direction:column}.panel-title{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9ca3af;padding:12px 16px 0}#map-panel,#chord-panel{min-height:420px}#yt-panel,#par-panel{min-height:420px}#map-svg-wrap,#par-wrap{flex:1;position:relative;overflow:hidden}#map-svg-wrap svg,#par-wrap svg{position:absolute;inset:0;width:100%;height:100%}#chord-wrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:4px}#chord-wrap svg{width:100%;height:100%;max-width:100%;max-height:100%}#yt-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:16px}#yt-placeholder{text-align:center;color:#9ca3af;font-size:.8rem;line-height:1.6}#yt-placeholder svg{margin-bottom:8px;opacity:.35}#yt-content{width:100%}#yt-iframe-wrap{position:relative;padding-bottom:56.25%;height:0;border-radius:8px;overflow:hidden;background:#111827}#yt-iframe-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:none}#yt-info{margin-top:10px;font-size:.8rem;color:#374151}#yt-info strong{display:block;font-size:.92rem;font-weight:700;margin-bottom:2px}#yt-info span{color:#6b7280}.tooltip{position:absolute;visibility:hidden;background:white;color:black;padding:8px 10px;border:1px solid #999;border-radius:6px;font:12px sans-serif;pointer-events:none;line-height:1.4;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:1000}#overlay{position:fixed;inset:0;background:rgba(17,24,39,.92);display:none;align-items:center;justify-content:center;z-index:999;padding:24px}#overlay.show{display:flex}#overlay-box{background:white;border-radius:16px;padding:36px;width:90%;max-width:900px;max-height:85vh;overflow-y:auto;line-height:1.65;box-shadow:0 20px 60px rgba(0,0,0,.3)}#overlay-box .eyebrow{font-size:.72rem;letter-spacing:.1em;color:#6b7280;margin-bottom:6px}#overlay-box h2{font-size:1.8rem;font-weight:700;margin-bottom:16px}#overlay-box h3{font-size:1rem;margin:18px 0 8px}#overlay-box p{font-size:.9rem;color:#374151;margin-bottom:10px}#overlay-box ul,#overlay-box ol{padding-left:20px;font-size:.88rem;color:#374151;margin-bottom:16px}.enter-btn{background:#111827;color:white;border:none;border-radius:999px;padding:11px 22px;font-family:Inter,sans-serif;font-size:.85rem;font-weight:600;cursor:pointer}@media(max-width:900px){#grid{grid-template-columns:1fr}#header{flex-direction:column;align-items:flex-start}}
-</style>
-</head>
-<body>
-<div id="header"><div id="header-left"><div class="eyebrow">2016 – 2023</div><h1>EuroVis</h1><p>Visualizing Eurovision jury votes and tele votes</p></div><div id="header-right"><select class="year-select" id="year-sel"></select><button class="how-btn" id="how-btn">How voting works →</button></div></div>
-<div id="grid">
-  <div class="panel" id="map-panel"><div class="panel-title">Finalist Countries</div><div id="map-svg-wrap"><svg id="map-svg"></svg></div></div>
-  <div class="panel" id="chord-panel"><div class="panel-title">Jury Voting Flows</div><div id="chord-wrap"></div></div>
-  <div class="panel" id="yt-panel"><div class="panel-title">Performance Preview</div><div id="yt-wrap"><div id="yt-placeholder"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></svg><p>Click a country to preview<br>their Eurovision performance</p></div><div id="yt-content" style="display:none"></div></div></div>
-  <div class="panel" id="par-panel"><div class="panel-title">Jury vs Public</div><div id="par-wrap"><svg id="par-svg"></svg></div></div>
-</div>
-<div id="overlay">
-  <div id="overlay-box">
-    
-    <div class="eyebrow">2016 – 2023</div>
-    <h2>How Eurovision Voting Works</h2>
-    
-    <p>
-      The Eurovision Song Contest is an annual international music competition where countries from across Europe (and a few beyond) each submit an original song to be performed live on stage. First held in 1956, it has grown into one of the world’s largest televised events. In the grand final, each country presents one act, and the winner is decided through a combination of votes from national juries and the public.
-    </p>
-
-    <h3>How Voting Works in the Eurovision Final (2016–2023)</h3>
-    
-    <p><em>Note: In 2020, the contest was not held due to the global COVID-19 pandemic.</em></p>
-    
-    <p>
-      During the final, every participating country votes for their favorite performances, but they cannot vote for themselves.
-    </p>
-
-    <p>The voting system has two equally important parts:</p>
-
-    <ol>
-      <li>
-        <strong>Professional Jury Votes</strong><br>
-        Each country has a panel of five music industry professionals. They rank all the songs based on vocal ability, composition, originality, and performance. Their top 10 songs receive points from 1 to 12 (with 12 being the highest).
-      </li>
-
-      <li>
-        <strong>Public Televote</strong><br>
-        Viewers at home also vote for their favorite songs via phone, app, or SMS. Just like the jury, the public’s top 10 songs receive points from 1 to 12.
-      </li>
-    </ol>
-
-    <p>
-      This means each country gives out two separate sets of points: one from the jury and one from the public.
-    </p>
-
-    <h3>How the Winner Is Decided</h3>
-
-    <ul>
-      <li>Jury points from all countries are announced first</li>
-      <li>Then, the public televotes are added on top</li>
-      <li>The song with the highest combined total wins</li>
-    </ul>
-
-    <p>
-      Because juries and the public often have different tastes, the results can reveal interesting patterns:
-    </p>
-
-    <ul>
-      <li>Songs loved by viewers but not by experts (or vice versa)</li>
-      <li>Regional voting trends between neighboring countries</li>
-    </ul>
-
-    <button class="enter-btn" id="enter-btn">Enter Visualization →</button>
-
-  </div>
-</div>
-<script>
 const YEARS = [2016, 2017, 2018, 2019, 2021, 2022, 2023];
 const regionsOrder = ["Northern Europe", "Western Europe", "Southern Europe", "Central Europe", "Eastern Europe", "Southeastern Europe", "Other"];
 const regionColors = ["#aec7e8", "#ffbb78", "#ff9896", "#9edae5", "#98df8a", "#f7e6a1", "#c5b0d5"];
@@ -555,7 +475,6 @@ function renderParallel(scoresWide, contestants){
     const ty = yScale(d.tele);
     const my = midY.get(d.country);
     const isExtreme = Math.abs(d.bias) > 100;
-    const sw = 1.5;
     const op = 0.5;
 
     const ptsL = [[xJ,jy],[xJ+(xM-xJ)*.38,jy],[xJ+(xM-xJ)*.62,my],[xM,my]];
@@ -624,6 +543,3 @@ function renderParallel(scoresWide, contestants){
 }
 
 window.addEventListener("resize", () => { if(appData) updateAll(false); });
-</script>
-</body>
-</html>
