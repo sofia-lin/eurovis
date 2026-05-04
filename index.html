@@ -7,7 +7,20 @@
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box;margin:0;padding:0}body{font-family:Inter,sans-serif;background:#f0f2f5;color:#111827;min-height:100vh}#header{background:#111827;color:white;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;gap:20px}#header-left .eyebrow{font-size:.72rem;letter-spacing:.1em;color:#9ca3af;margin-bottom:3px}#header-left h1{font-size:1.45rem;font-weight:700;letter-spacing:-.4px}#header-left p{font-size:.8rem;color:#e5e7eb;margin-top:2px}#header-right{display:flex;align-items:center;gap:12px}.year-select{appearance:none;background:whitesmoke(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:7px 14px;font-family:Inter,sans-serif;font-size:.85rem;font-weight:500;color:black;cursor:pointer}.how-btn{background:white;color:#111827;border:none;border-radius:999px;padding:8px 16px;font-family:Inter,sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;white-space:nowrap}.how-btn:hover{background:#f3f4f6}
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:Inter,sans-serif;background:#f0f2f5;color:#111827;min-height:100vh}#header{background:#111827;color:white;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;gap:20px}#header-left .eyebrow{font-size:.72rem;letter-spacing:.1em;color:#9ca3af;margin-bottom:3px}#header-left h1{font-size:1.45rem;font-weight:700;letter-spacing:-.4px}#header-left p{font-size:.8rem;color:#e5e7eb;margin-top:2px}#header-right{display:flex;align-items:center;gap:12px}
+.year-select{appearance: none;
+  background:
+    rgba(255,255,255,.1)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='white' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    no-repeat right 12px center;
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 8px;
+  padding: 7px 34px 7px 14px;
+  font-family: Inter, sans-serif;
+  font-size: .85rem;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;}.how-btn{background:white;color:#111827;border:none;border-radius:999px;padding:8px 16px;font-family:Inter,sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;white-space:nowrap}.how-btn:hover{background:#f3f4f6}
 #grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto;gap:14px;padding:14px;min-height:calc(100vh - 80px)}
 .panel{background:white;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden;display:flex;flex-direction:column}.panel-title{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9ca3af;padding:12px 16px 0}#map-panel,#chord-panel{min-height:420px}#yt-panel,#par-panel{min-height:420px}#map-svg-wrap,#par-wrap{flex:1;position:relative;overflow:hidden}#map-svg-wrap svg,#par-wrap svg{position:absolute;inset:0;width:100%;height:100%}#chord-wrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:4px}#chord-wrap svg{width:100%;height:100%;max-width:100%;max-height:100%}#yt-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:16px}#yt-placeholder{text-align:center;color:#9ca3af;font-size:.8rem;line-height:1.6}#yt-placeholder svg{margin-bottom:8px;opacity:.35}#yt-content{width:100%}#yt-iframe-wrap{position:relative;padding-bottom:56.25%;height:0;border-radius:8px;overflow:hidden;background:#111827}#yt-iframe-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:none}#yt-info{margin-top:10px;font-size:.8rem;color:#374151}#yt-info strong{display:block;font-size:.92rem;font-weight:700;margin-bottom:2px}#yt-info span{color:#6b7280}.tooltip{position:absolute;visibility:hidden;background:white;color:black;padding:8px 10px;border:1px solid #999;border-radius:6px;font:12px sans-serif;pointer-events:none;line-height:1.4;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:1000}#overlay{position:fixed;inset:0;background:rgba(17,24,39,.92);display:none;align-items:center;justify-content:center;z-index:999;padding:24px}#overlay.show{display:flex}#overlay-box{background:white;border-radius:16px;padding:36px;width:90%;max-width:900px;max-height:85vh;overflow-y:auto;line-height:1.65;box-shadow:0 20px 60px rgba(0,0,0,.3)}#overlay-box .eyebrow{font-size:.72rem;letter-spacing:.1em;color:#6b7280;margin-bottom:6px}#overlay-box h2{font-size:1.8rem;font-weight:700;margin-bottom:16px}#overlay-box h3{font-size:1rem;margin:18px 0 8px}#overlay-box p{font-size:.9rem;color:#374151;margin-bottom:10px}#overlay-box ul,#overlay-box ol{padding-left:20px;font-size:.88rem;color:#374151;margin-bottom:16px}.enter-btn{background:#111827;color:white;border:none;border-radius:999px;padding:11px 22px;font-family:Inter,sans-serif;font-size:.85rem;font-weight:600;cursor:pointer}@media(max-width:900px){#grid{grid-template-columns:1fr}#header{flex-direction:column;align-items:flex-start}}
 </style>
@@ -78,13 +91,13 @@
   </div>
 </div>
 <script>
-const YEARS = [2016, 2017, 2018, 2019, 2021, 2022, 2023];
-const regionsOrder = ["Northern Europe", "Western Europe", "Southern Europe", "Central Europe", "Eastern Europe", "Southeastern Europe", "Other"];
-const regionColors = ["#aec7e8", "#ffbb78", "#ff9896", "#9edae5", "#98df8a", "#f7e6a1", "#c5b0d5"];
-const europeNames = new Set(["Albania","Armenia","Andorra","Austria","Azerbaijan","Belarus","Belgium","Bosnia and Herzegovina","Bulgaria","Croatia","Czech Republic","Czechia","Denmark","Estonia","Finland","France","Germany","Georgia","Greece","Hungary","Iceland","Ireland","Israel","Italy","Latvia","Lithuania","Luxembourg","Malta","Moldova","Monaco","Montenegro","Morocco","Netherlands","North Macedonia","Norway","Poland","Portugal","Romania","Russia","San Marino","Serbia","Slovakia","Slovenia","Spain","Sweden","Switzerland","Turkey","Ukraine","United Kingdom","Vatican","Vatican City","Kosovo"]);
-let selectedYear = 2016;
-let selectedCountry = null;
-let appData = null;
+  const YEARS = [2016, 2017, 2018, 2019, 2021, 2022, 2023];
+  const regionsOrder = ["Northern Europe", "Western Europe", "Southern Europe", "Central Europe", "Eastern Europe", "Southeastern Europe", "Other"];
+  const regionColors = ["#aec7e8", "#ffbb78", "#ff9896", "#9edae5", "#98df8a", "#f7e6a1", "#c5b0d5"];
+  const europeNames = new Set(["Albania","Armenia","Andorra","Austria","Azerbaijan","Belarus","Belgium","Bosnia and Herzegovina","Bulgaria","Croatia","Czech Republic","Czechia","Denmark","Estonia","Finland","France","Germany","Georgia","Greece","Hungary","Iceland","Ireland","Israel","Italy","Latvia","Lithuania","Luxembourg","Malta","Moldova","Monaco","Montenegro","Morocco","Netherlands","North Macedonia","Norway","Poland","Portugal","Romania","Russia","San Marino","Serbia","Slovakia","Slovenia","Spain","Sweden","Switzerland","Turkey","Ukraine","United Kingdom","Vatican","Vatican City","Kosovo"]);
+  let selectedYear = 2016;
+  let selectedCountry = null;
+  let appData = null;
 
 Promise.all([
   d3.json("countries@16.geo.json"),
@@ -237,7 +250,7 @@ function renderMap(worldData, contestants, artistsSongs, resetSelection){
 
         d3.select(this)
           .attr("fill", countryFill(entry, name))
-          .attr("stroke", key === selectedCountry ? "#08306b" : "#fff")
+          .attr("stroke", key === selectedCountry ? "#000000" : "#fff")
           .attr("stroke-width", key === selectedCountry ? 2.5 : .8);
 
         tooltip.style("visibility","hidden");
@@ -366,8 +379,7 @@ Points: ${d.target.value}`);
     .attr("d", arc)
     .append("title")
     .text(d => `${countries[d.index]}
-Region: ${nodeRegion(countries[d.index])}
-Total points: ${d.value}`);
+Region: ${nodeRegion(countries[d.index])}`);
 
   group.append("text")
     .each(d => d.angle = (d.startAngle + d.endAngle) / 2)
@@ -380,7 +392,7 @@ Total points: ${d.value}`);
     .text(d => countries[d.index]);
 
   const legend = svg.append("g")
-    .attr("transform",`translate(${-width/2+22},${-height/2+50})`);
+    .attr("transform",`translate(${-width/2+22},${-height/2+15})`);
 
   legend.selectAll("rect")
     .data(regionsOrder)
