@@ -20,7 +20,63 @@
   <div class="panel" id="yt-panel"><div class="panel-title">Performance Preview</div><div id="yt-wrap"><div id="yt-placeholder"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></svg><p>Click a country to preview<br>their Eurovision performance</p></div><div id="yt-content" style="display:none"></div></div></div>
   <div class="panel" id="par-panel"><div class="panel-title">Jury vs Public — Parallel Coordinates</div><div id="par-wrap"><svg id="par-svg"></svg></div></div>
 </div>
-<div id="overlay"><div id="overlay-box"><div class="eyebrow">2016 – 2023</div><h2>How Eurovision Voting Works</h2><p>The Eurovision Song Contest is an annual international music competition. In the grand final, each country presents one act, and the winner is decided through votes from national juries and the public.</p><h3>How Voting Works in the Eurovision Final</h3><p><em>Note: In 2020, the contest was not held due to COVID-19.</em></p><ol><li><strong>Professional Jury Votes</strong><br>Each country has a jury of music industry professionals. Their top 10 songs receive 1–12 points.</li><li><strong>Public Televote</strong><br>Viewers vote by phone, app, or SMS. Their top 10 songs also receive 1–12 points.</li></ol><p>The final score combines jury and public points, making it possible to compare expert and audience preferences.</p><button class="enter-btn" id="enter-btn">Enter Visualization →</button></div></div>
+<div id="overlay">
+  <div id="overlay-box">
+    
+    <div class="eyebrow">1956 – 2023</div>
+    <h2>How Eurovision Voting Works</h2>
+    
+    <p>
+      The Eurovision Song Contest is an annual international music competition where countries from across Europe (and a few beyond) each submit an original song to be performed live on stage. First held in 1956, it has grown into one of the world’s largest televised events. In the grand final, each country presents one act, and the winner is decided through a combination of votes from national juries and the public.
+    </p>
+
+    <h3>How Voting Works in the Eurovision Final (2016–2023)</h3>
+    
+    <p><em>Note: In 2020, the contest was not held due to the global COVID-19 pandemic.</em></p>
+    
+    <p>
+      During the final, every participating country votes for their favorite performances, but they cannot vote for themselves.
+    </p>
+
+    <p>The voting system has two equally important parts:</p>
+
+    <ol>
+      <li>
+        <strong>Professional Jury Votes</strong><br>
+        Each country has a panel of five music industry professionals. They rank all the songs based on vocal ability, composition, originality, and performance. Their top 10 songs receive points from 1 to 12 (with 12 being the highest).
+      </li>
+
+      <li>
+        <strong>Public Televote</strong><br>
+        Viewers at home also vote for their favorite songs via phone, app, or SMS. Just like the jury, the public’s top 10 songs receive points from 1 to 12.
+      </li>
+    </ol>
+
+    <p>
+      This means each country gives out two separate sets of points: one from the jury and one from the public.
+    </p>
+
+    <h3>How the Winner Is Decided</h3>
+
+    <ul>
+      <li>Jury points from all countries are announced first</li>
+      <li>Then, the public televotes are added on top</li>
+      <li>The song with the highest combined total wins</li>
+    </ul>
+
+    <p>
+      Because juries and the public often have different tastes, the results can reveal interesting patterns:
+    </p>
+
+    <ul>
+      <li>Songs loved by viewers but not by experts (or vice versa)</li>
+      <li>Regional voting trends between neighboring countries</li>
+    </ul>
+
+    <button class="enter-btn" id="enter-btn">Enter Visualization →</button>
+
+  </div>
+</div>
 <script>
 const YEARS = [2016, 2017, 2018, 2019, 2021, 2022, 2023];
 const regionsOrder = ["Northern Europe", "Western Europe", "Southern Europe", "Central Europe", "Eastern Europe", "Southeastern Europe", "Other"];
