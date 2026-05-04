@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EuroVis · Eurovision Voting 2016–2023</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:Inter,sans-serif;background:#f0f2f5;color:#111827;min-height:100vh}#header{background:#111827;color:white;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;gap:20px}#header-left .eyebrow{font-size:.72rem;letter-spacing:.1em;color:#9ca3af;margin-bottom:3px}#header-left h1{font-size:1.45rem;font-weight:700;letter-spacing:-.4px}#header-left p{font-size:.8rem;color:#e5e7eb;margin-top:2px}#header-right{display:flex;align-items:center;gap:12px}.year-select{appearance:none;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:7px 14px;font-family:Inter,sans-serif;font-size:.85rem;font-weight:500;color:white;cursor:pointer}.how-btn{background:white;color:#111827;border:none;border-radius:999px;padding:8px 16px;font-family:Inter,sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;white-space:nowrap}.how-btn:hover{background:#f3f4f6}#grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto;gap:14px;padding:14px;min-height:calc(100vh - 80px)}.panel{background:white;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden;display:flex;flex-direction:column}.panel-title{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9ca3af;padding:12px 16px 0}#map-panel,#chord-panel{min-height:420px}#yt-panel,#par-panel{min-height:300px}#map-svg-wrap,#par-wrap{flex:1;position:relative;overflow:hidden}#map-svg-wrap svg,#par-wrap svg{position:absolute;inset:0;width:100%;height:100%}#chord-wrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:4px}#chord-wrap svg{width:100%;height:100%;max-width:100%;max-height:100%}#yt-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:16px}#yt-placeholder{text-align:center;color:#9ca3af;font-size:.8rem;line-height:1.6}#yt-placeholder svg{margin-bottom:8px;opacity:.35}#yt-content{width:100%}#yt-iframe-wrap{position:relative;padding-bottom:56.25%;height:0;border-radius:8px;overflow:hidden;background:#111827}#yt-iframe-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:none}#yt-info{margin-top:10px;font-size:.8rem;color:#374151}#yt-info strong{display:block;font-size:.92rem;font-weight:700;margin-bottom:2px}#yt-info span{color:#6b7280}.tooltip{position:absolute;visibility:hidden;background:white;color:black;padding:8px 10px;border:1px solid #999;border-radius:6px;font:12px sans-serif;pointer-events:none;line-height:1.4;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:1000}#overlay{position:fixed;inset:0;background:rgba(17,24,39,.92);display:none;align-items:center;justify-content:center;z-index:999;padding:24px}#overlay.show{display:flex}#overlay-box{background:white;border-radius:16px;padding:36px;width:90%;max-width:900px;max-height:85vh;overflow-y:auto;line-height:1.65;box-shadow:0 20px 60px rgba(0,0,0,.3)}#overlay-box .eyebrow{font-size:.72rem;letter-spacing:.1em;color:#6b7280;margin-bottom:6px}#overlay-box h2{font-size:1.8rem;font-weight:700;margin-bottom:16px}#overlay-box h3{font-size:1rem;margin:18px 0 8px}#overlay-box p{font-size:.9rem;color:#374151;margin-bottom:10px}#overlay-box ul,#overlay-box ol{padding-left:20px;font-size:.88rem;color:#374151;margin-bottom:16px}.enter-btn{background:#111827;color:white;border:none;border-radius:999px;padding:11px 22px;font-family:Inter,sans-serif;font-size:.85rem;font-weight:600;cursor:pointer}@media(max-width:900px){#grid{grid-template-columns:1fr}#header{flex-direction:column;align-items:flex-start}}
+</style>
+</head>
+<body>
+<div id="header"><div id="header-left"><div class="eyebrow">2016 – 2023</div><h1>EuroVis</h1><p>Visualizing Eurovision jury voting flows, public vote, and finalist countries</p></div><div id="header-right"><select class="year-select" id="year-sel"></select><button class="how-btn" id="how-btn">How voting works →</button></div></div>
+<div id="grid">
+  <div class="panel" id="map-panel"><div class="panel-title">Finalist Countries</div><div id="map-svg-wrap"><svg id="map-svg"></svg></div></div>
+  <div class="panel" id="chord-panel"><div class="panel-title">Jury Voting Flows</div><div id="chord-wrap"></div></div>
+  <div class="panel" id="yt-panel"><div class="panel-title">Performance Preview</div><div id="yt-wrap"><div id="yt-placeholder"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></svg><p>Click a country to preview<br>their Eurovision performance</p></div><div id="yt-content" style="display:none"></div></div></div>
+  <div class="panel" id="par-panel"><div class="panel-title">Jury vs Public — Parallel Coordinates</div><div id="par-wrap"><svg id="par-svg"></svg></div></div>
+</div>
+<div id="overlay"><div id="overlay-box"><div class="eyebrow">2016 – 2023</div><h2>How Eurovision Voting Works</h2><p>The Eurovision Song Contest is an annual international music competition. In the grand final, each country presents one act, and the winner is decided through votes from national juries and the public.</p><h3>How Voting Works in the Eurovision Final</h3><p><em>Note: In 2020, the contest was not held due to COVID-19.</em></p><ol><li><strong>Professional Jury Votes</strong><br>Each country has a jury of music industry professionals. Their top 10 songs receive 1–12 points.</li><li><strong>Public Televote</strong><br>Viewers vote by phone, app, or SMS. Their top 10 songs also receive 1–12 points.</li></ol><p>The final score combines jury and public points, making it possible to compare expert and audience preferences.</p><button class="enter-btn" id="enter-btn">Enter Visualization →</button></div></div>
+<script>
+const YEARS = d3.range(2016, 2024);
+const regionsOrder = ["Northern Europe", "Western Europe", "Southern Europe", "Central Europe", "Eastern Europe", "Southeastern Europe", "Other"];
+const regionColors = ["#aec7e8", "#ffbb78", "#ff9896", "#9edae5", "#98df8a", "#f7e6a1", "#c5b0d5"];
+const europeNames = new Set(["Albania","Armenia","Andorra","Austria","Azerbaijan","Belarus","Belgium","Bosnia and Herzegovina","Bulgaria","Croatia","Czech Republic","Czechia","Denmark","Estonia","Finland","France","Germany","Georgia","Greece","Hungary","Iceland","Ireland","Israel","Italy","Latvia","Lithuania","Luxembourg","Malta","Moldova","Monaco","Montenegro","Morocco","Netherlands","North Macedonia","Norway","Poland","Portugal","Romania","Russia","San Marino","Serbia","Slovakia","Slovenia","Spain","Sweden","Switzerland","Turkey","Ukraine","United Kingdom","Vatican","Vatican City","Kosovo"]);
+let selectedYear = 2016;
+let selectedCountry = null;
+let appData = null;
+
+Promise.all([
+  d3.json("countries@16.geo.json"),
+  d3.csv("contestants.csv", d3.autoType),
+  d3.csv("eurovision_artists_songs_2016_2023.csv", d3.autoType),
+  d3.csv("eurovision_flow_with_regions_2016_2023.csv", d3.autoType),
+  d3.csv("eurovision_scores_wide_2016_2023.csv", d3.autoType)
+]).then(([worldData, contestants, artistsSongs, flowData, scoresWide]) => {
+  appData = { worldData, contestants, artistsSongs, flowData, scoresWide };
+  setupControls();
+  updateAll(true);
+});
+
+function setupControls(){
+  const yearSel = d3.select("#year-sel");
+  yearSel.selectAll("option").data(YEARS).join("option").attr("value", d=>d).text(d=>d);
+  yearSel.property("value", selectedYear);
+  yearSel.on("change", function(){ selectedYear = +this.value; selectedCountry = null; updateAll(true); });
+  d3.select("#how-btn").on("click", () => d3.select("#overlay").classed("show", true));
+  d3.select("#enter-btn").on("click", () => d3.select("#overlay").classed("show", false));
+  d3.select("#overlay").on("click", (event) => { if(event.target.id === "overlay") d3.select("#overlay").classed("show", false); });
+}
+
+function updateAll(reset=false){
+  renderMap(appData.worldData, appData.contestants, appData.artistsSongs, reset);
+  renderChord(appData.flowData);
+  renderParallel(appData.scoresWide, appData.contestants);
+}
+
+function countryKey(name){
+  const map = new Map([["Czech Republic","Czechia"],["Bosnia and Herzegovina","Bosnia & Herzegovina"],["North Macedonia","Macedonia"]]);
+  return map.get(name) || name;
+}
+function youtubeEmbed(url){
+  if(!url) return null;
+  const s = String(url);
+  const m = s.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/);
+  return m ? `https://www.youtube.com/embed/${m[1]}` : null;
+}
+function showYoutube(entry, artistSong){
+  const wrap = d3.select("#yt-wrap");
+  const content = d3.select("#yt-content");
+  const embed = youtubeEmbed(entry?.youtube_url);
+  d3.select("#yt-placeholder").style("display", embed ? "none" : "block");
+  content.style("display", embed ? "block" : "none");
+  if(!embed) return;
+  content.html(`<div id="yt-iframe-wrap"><iframe src="${embed}" allowfullscreen></iframe></div><div id="yt-info"><strong>${entry.country}</strong><span>${artistSong?.artist || "N/A"} — ${artistSong?.song || "N/A"}</span><br><span>Final place: ${entry.place_final}</span></div>`);
+}
+
+function renderMap(worldData, contestants, artistsSongs, resetSelection){
+  if(resetSelection) selectedCountry = null;
+  const wrap = document.getElementById("map-svg-wrap");
+  const width = Math.max(520, wrap.clientWidth || 760);
+  const height = Math.max(360, wrap.clientHeight || 420);
+  d3.select("#map-svg").selectAll("*").remove();
+  d3.select("body").selectAll(".tooltip").remove();
+  const svg = d3.select("#map-svg").attr("viewBox", [0,0,width,height]);
+  const tooltip = d3.create("div").attr("class","tooltip");
+  document.body.appendChild(tooltip.node());
+
+  const getName = d => d.properties.name || d.properties.ADMIN || d.properties.admin || d.properties.NAME || "";
+  const features = worldData.features;
+  const mapFeatures = features.filter(d => europeNames.has(getName(d)));
+  const mapData = { type:"FeatureCollection", features: mapFeatures };
+  const australiaData = { type:"FeatureCollection", features: features.filter(d => getName(d) === "Australia") };
+  const maltaFeature = mapFeatures.find(d => getName(d) === "Malta");
+  const maltaData = maltaFeature ? { type:"FeatureCollection", features:[maltaFeature] } : null;
+
+  const finalistsRaw = contestants.filter(d => +d.year >= 2016 && +d.year <= 2023 && d.place_final != null && d.place_final !== "" && !isNaN(+d.place_final));
+  const finalists = Array.from(d3.rollup(finalistsRaw, v=>v[0], d=>+d.year, d=>d.to_country), ([year, countryMap]) => Array.from(countryMap, ([country,row]) => ({year, country, country_id: row.to_country_id, youtube_url: row.youtube_url, place_final:+row.place_final}))).flat();
+  const finalistsByYear = d3.rollup(finalists, v => new Map(v.map(d => [d.country, d])), d => d.year);
+  const artistSongByYearCountry = d3.rollup(artistsSongs, v=>v[0], d=>+d.year, d=>d.country);
+  const yearMap = finalistsByYear.get(selectedYear) || new Map();
+  const projection = d3.geoMercator().fitExtent([[20,20],[width-20,height-20]], mapData);
+  const path = d3.geoPath(projection);
+
+  const mapGroup = svg.append("g");
+  const australiaInsetGroup = svg.append("g").attr("transform", `translate(${width*0.27}, ${height*0.09})`);
+  const maltaInsetGroup = svg.append("g").attr("transform", `translate(${width*0.50}, ${height*0.88})`);
+  const ausW=135, ausH=90, malW=55, malH=35;
+  const australiaProjection = d3.geoMercator().fitExtent([[9,9],[ausW-9,ausH-9]], australiaData);
+  const australiaPath = d3.geoPath(australiaProjection);
+  const maltaProjection = d3.geoMercator();
+  let maltaPath = null;
+  if(maltaData){ maltaProjection.fitExtent([[5,5],[malW-5,malH-5]], maltaData); maltaPath = d3.geoPath(maltaProjection); }
+
+  function getEntry(feature){ return yearMap.get(countryKey(getName(feature))); }
+  function getArtistSong(country){ return (artistSongByYearCountry.get(selectedYear) || new Map()).get(country); }
+  function countryFill(entry, name){ if(!entry) return "#d9d9d9"; if(name === selectedCountry && entry.place_final === 1) return "#8c6d1f"; if(name === selectedCountry) return "#1f4e79"; if(entry.place_final === 1) return "#d4af37"; return "#9ecae1"; }
+
+  function apply(selection, inset=false){
+    selection.attr("fill", d => countryFill(getEntry(d), getName(d))).attr("stroke", d => getName(d) === selectedCountry ? "#08306b" : "#fff").attr("stroke-width", d => getName(d) === selectedCountry ? 2.5 : .8).style("cursor", d => getEntry(d) ? "pointer" : "default")
+      .on("mouseover", function(event,d){ const entry=getEntry(d); if(!entry) return; const as=getArtistSong(entry.country); d3.select(this).attr("stroke","#222").attr("stroke-width",2); tooltip.style("visibility","visible").html(`<strong>${entry.country}</strong><br>Singer: ${as?.artist || "N/A"}<br>Song: ${as?.song || "N/A"}<br>Final place: ${entry.place_final}`); })
+      .on("mousemove", event => tooltip.style("top", `${event.pageY+12}px`).style("left", `${event.pageX+12}px`))
+      .on("mouseout", function(event,d){ const entry=getEntry(d), name=getName(d); d3.select(this).attr("fill", countryFill(entry,name)).attr("stroke", name===selectedCountry?"#08306b":"#fff").attr("stroke-width", name===selectedCountry?2.5:.8); tooltip.style("visibility","hidden"); })
+      .on("click", function(event,d){ const entry=getEntry(d); if(!entry) return; const clicked=getName(d); selectedCountry = selectedCountry === clicked ? null : clicked; showYoutube(entry, getArtistSong(entry.country)); renderMap(worldData, contestants, artistsSongs, false); });
+  }
+
+  const mapCountries = mapGroup.selectAll("path.country").data(mapData.features).join("path").attr("class","country").attr("d",path);
+  apply(mapCountries);
+  if(maltaFeature){ const c = path.centroid(maltaFeature); svg.append("line").attr("x1",c[0]).attr("y1",c[1]).attr("x2",width*.50+27.5).attr("y2",height*.88).attr("stroke","#555").attr("stroke-width",1.4).attr("stroke-dasharray","4,3"); svg.append("circle").attr("cx",c[0]).attr("cy",c[1]).attr("r",4).attr("fill","white").attr("stroke","#555").attr("stroke-width",1.2); }
+  australiaInsetGroup.append("rect").attr("width",ausW).attr("height",ausH).attr("fill","none").attr("stroke","#8f8f8f").attr("stroke-width",1.2);
+  const ausCountries = australiaInsetGroup.selectAll("path.country").data(australiaData.features).join("path").attr("class","country").attr("d",australiaPath).attr("stroke","#8f8f8f");
+  apply(ausCountries);
+  if(maltaData){ maltaInsetGroup.append("rect").attr("width",malW).attr("height",malH).attr("fill","none").attr("stroke","#777").attr("stroke-width",1.2).attr("stroke-dasharray","4,3"); const maltaCountries = maltaInsetGroup.selectAll("path.country").data(maltaData.features).join("path").attr("class","country").attr("d",maltaPath); apply(maltaCountries); }
+}
+
+function renderChord(data){
+  const wrap = document.getElementById("chord-wrap");
+  d3.select(wrap).selectAll("*").remove();
+  const filteredData = data.filter(d => +d.year === selectedYear && +d.points > 0);
+  const countryRegion = new Map();
+  for(const d of data){ if(d.to_country && d.to_region) countryRegion.set(d.to_country, d.to_region); }
+  const countries = Array.from(new Set(filteredData.flatMap(d => [d.from_country, d.to_country]))).sort((a,b)=>{
+    const ra = countryRegion.get(a) ?? "Other", rb = countryRegion.get(b) ?? "Other";
+    return (regionsOrder.indexOf(ra) - regionsOrder.indexOf(rb)) || d3.ascending(a,b);
+  });
+  const index = new Map(countries.map((d,i)=>[d,i]));
+  const matrix = Array.from({length:countries.length}, () => Array(countries.length).fill(0));
+  for(const d of filteredData){ const i=index.get(d.from_country), j=index.get(d.to_country); if(i!==undefined && j!==undefined) matrix[i][j] += +d.points; }
+  const width=720, height=720, outerRadius=Math.min(width,height)*.5-88, innerRadius=outerRadius-18;
+  const svg = d3.create("svg").attr("viewBox",[-width/2,-height/2,width,height]).attr("width",width).attr("height",height).style("font","9px sans-serif");
+  const color = d3.scaleOrdinal().domain(regionsOrder).range(regionColors);
+  const chord = d3.chord().padAngle(.035).sortSubgroups(d3.descending).sortChords(d3.descending)(matrix);
+  const arc = d3.arc().innerRadius(innerRadius).outerRadius(outerRadius);
+  const ribbon = d3.ribbon().radius(innerRadius);
+  const nodeRegion = name => countryRegion.get(name) ?? "Other";
+  svg.append("text").attr("x",0).attr("y",-height/2+24).attr("text-anchor","middle").style("font-size","16px").style("font-weight","bold").text(`Eurovision Jury Voting Flows — ${selectedYear}`);
+  svg.append("g").attr("fill-opacity",.5).selectAll("path").data(chord).join("path").attr("d",ribbon).attr("fill",d=>color(nodeRegion(countries[d.source.index]))).attr("stroke",d=>d3.rgb(color(nodeRegion(countries[d.source.index]))).darker()).append("title").text(d=>`${countries[d.source.index]} → ${countries[d.target.index]}\nPoints: ${d.source.value}\n\n${countries[d.target.index]} → ${countries[d.source.index]}\nPoints: ${d.target.value}`);
+  const group = svg.append("g").selectAll("g").data(chord.groups).join("g");
+  group.append("path").attr("fill",d=>color(nodeRegion(countries[d.index]))).attr("stroke",d=>d3.rgb(color(nodeRegion(countries[d.index]))).darker()).attr("d",arc).append("title").text(d=>`${countries[d.index]}\nRegion: ${nodeRegion(countries[d.index])}\nTotal points: ${d.value}`);
+  group.append("text").each(d=>d.angle=(d.startAngle+d.endAngle)/2).attr("dy",".35em").attr("transform",d=>`rotate(${d.angle*180/Math.PI-90}) translate(${outerRadius+6}) ${d.angle>Math.PI?"rotate(180)":""}`).attr("text-anchor",d=>d.angle>Math.PI?"end":"start").text(d=>countries[d.index]);
+  const legend = svg.append("g").attr("transform",`translate(${-width/2+22},${-height/2+50})`);
+  legend.selectAll("rect").data(regionsOrder).join("rect").attr("x",0).attr("y",(d,i)=>i*18).attr("width",12).attr("height",12).attr("fill",d=>color(d));
+  legend.selectAll("text").data(regionsOrder).join("text").attr("x",18).attr("y",(d,i)=>i*18+10).style("font-size","11px").text(d=>d);
+  wrap.appendChild(svg.node());
+}
+
+function renderParallel(scoresWide, contestants){
+  const wrap = document.getElementById("par-wrap");
+  d3.select("#par-svg").selectAll("*").remove();
+  const width = Math.max(520, wrap.clientWidth || 700), height = Math.max(280, wrap.clientHeight || 300);
+  const MAX_PTS = 460, CAT_COL = { jury:"#2563eb", tele:"#059669", agree:"#d97706" };
+  const placeByYearCountry = d3.rollup(contestants.filter(d => d.place_final != null && !isNaN(+d.place_final)), v=>+v[0].place_final, d=>+d.year, d=>d.to_country);
+  const rows = scoresWide.filter(d => +d.year === selectedYear).map(d => ({...d, place: (placeByYearCountry.get(+d.year)||new Map()).get(d.country)}));
+  if(!rows.length) return;
+  function cat(d){ const diff=Math.abs(d.bias), mx=Math.max(d.jury,d.tele,1); if(diff<=.12*mx) return "agree"; return d.bias>0?"jury":"tele"; }
+  const colFn=d=>CAT_COL[cat(d)], M={top:45,right:70,bottom:24,left:70};
+  const iW=width-M.left-M.right, iH=height-M.top-M.bottom, xJ=M.left, xM=M.left+iW/2, xT=M.left+iW;
+  const yScale=d3.scaleLinear().domain([0,MAX_PTS]).range([M.top+iH,M.top]);
+  const curve=d3.line().curve(d3.curveBasis);
+  const sorted=[...rows].sort((a,b)=>(a.place||99)-(b.place||99));
+  const midY=new Map(sorted.map((d,i)=>[d.country, M.top + (rows.length===1 ? iH/2 : i*iH/(rows.length-1))]));
+  const svg=d3.select("#par-svg").attr("viewBox",[0,0,width,height]).attr("font-family","sans-serif").style("background","#edf1f7").style("border-radius","8px");
+  for(const v of [0,50,100,150,200,250,300,350,400,450]){ const y=yScale(v); svg.append("line").attr("x1",xJ).attr("x2",xT).attr("y1",y).attr("y2",y).attr("stroke","#e4e9f2"); svg.append("text").attr("x",xJ-8).attr("y",y+3.5).attr("text-anchor","end").attr("fill","#9ca3af").attr("font-size",8).text(v); svg.append("text").attr("x",xT+8).attr("y",y+3.5).attr("fill","#9ca3af").attr("font-size",8).text(v); }
+  for(const x of [xJ,xT]) svg.append("line").attr("x1",x).attr("x2",x).attr("y1",M.top).attr("y2",M.top+iH).attr("stroke","#c8d4e4").attr("stroke-width",1.5);
+  for(const [x,label,fill,italic] of [[xJ,"JURY POINTS","#2563eb",false],[xM,"COUNTRIES","#6b7280",true],[xT,"PUBLIC POINTS","#059669",false]]) svg.append("text").attr("x",x).attr("y",M.top-22).attr("text-anchor","middle").attr("fill",fill).attr("font-size",10).attr("font-weight",700).attr("letter-spacing",".09em").attr("font-style",italic?"italic":"normal").text(label);
+  const g=svg.append("g"), refs=new Map();
+  function applySelection(sel){ for(const [country,r] of refs){ const isSelected=sel===country, isFaded=sel!==null&&!isSelected; r.pathL.attr("stroke-width",isSelected?3:r.sw).attr("opacity",isFaded?.07:isSelected?1:r.op); r.pathR.attr("stroke-width",isSelected?3:r.sw).attr("opacity",isFaded?.07:isSelected?1:r.op); r.dJ.attr("r",isSelected?5:3.5).attr("opacity",isFaded?.1:isSelected?1:.55); r.dT.attr("r",isSelected?5:3.5).attr("opacity",isFaded?.1:isSelected?1:.55); r.dM.attr("r",isSelected?5.5:4).attr("opacity",isFaded?.1:isSelected?1:.7); r.lbl.attr("fill",isFaded?"#c8d0dc":isSelected?r.c:"#374151").attr("font-weight",isSelected?700:null); }}
+  svg.on("click",()=>{selectedCountry=null;applySelection(null);});
+  for(const d of rows){ const jy=yScale(d.jury), ty=yScale(d.tele), my=midY.get(d.country), c=colFn(d), isExtreme=Math.abs(d.bias)>100, sw=isExtreme?2:1.2, op=isExtreme?.72:.38; const ptsL=[[xJ,jy],[xJ+(xM-xJ)*.38,jy],[xJ+(xM-xJ)*.62,my],[xM,my]], ptsR=[[xM,my],[xM+(xT-xM)*.38,my],[xM+(xT-xM)*.62,ty],[xT,ty]]; const pathL=g.append("path").datum(ptsL).attr("d",curve).attr("fill","none").attr("stroke",c).attr("stroke-width",sw).attr("opacity",op); const pathR=g.append("path").datum(ptsR).attr("d",curve).attr("fill","none").attr("stroke",c).attr("stroke-width",sw).attr("opacity",op); const dJ=g.append("circle").attr("cx",xJ).attr("cy",jy).attr("r",3.5).attr("fill","#2563eb").attr("opacity",.55); const dT=g.append("circle").attr("cx",xT).attr("cy",ty).attr("r",3.5).attr("fill","#059669").attr("opacity",.55); const dM=g.append("circle").attr("cx",xM).attr("cy",my).attr("r",4).attr("fill",c).attr("opacity",.7); const lbl=g.append("text").attr("x",xM+8).attr("y",my+3.5).attr("fill","#374151").attr("font-size",rows.length>25?8:9).text(d.country).style("cursor","pointer"); refs.set(d.country,{pathL,pathR,dJ,dT,dM,lbl,sw,op,c}); function selectThis(event){ event.stopPropagation(); selectedCountry = selectedCountry===d.country?null:d.country; applySelection(selectedCountry); } for(const pts of [ptsL,ptsR]) g.append("path").datum(pts).attr("d",curve).attr("fill","none").attr("stroke","transparent").attr("stroke-width",14).style("cursor","pointer").on("click",selectThis).on("mouseenter",()=>applySelection(d.country)).on("mouseleave",()=>applySelection(selectedCountry)); lbl.on("click",selectThis).on("mouseenter",()=>applySelection(d.country)).on("mouseleave",()=>applySelection(selectedCountry)); }
+  applySelection(selectedCountry);
+}
+
+window.addEventListener("resize", () => { if(appData) updateAll(false); });
+</script>
+</body>
+</html>
