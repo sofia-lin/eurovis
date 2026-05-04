@@ -18,7 +18,7 @@
   <div class="panel" id="map-panel"><div class="panel-title">Finalist Countries</div><div id="map-svg-wrap"><svg id="map-svg"></svg></div></div>
   <div class="panel" id="chord-panel"><div class="panel-title">Jury Voting Flows</div><div id="chord-wrap"></div></div>
   <div class="panel" id="yt-panel"><div class="panel-title">Performance Preview</div><div id="yt-wrap"><div id="yt-placeholder"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></svg><p>Click a country to preview<br>their Eurovision performance</p></div><div id="yt-content" style="display:none"></div></div></div>
-  <div class="panel" id="par-panel"><div class="panel-title">Jury vs Public — Parallel Coordinates</div><div id="par-wrap"><svg id="par-svg"></svg></div></div>
+  <div class="panel" id="par-panel"><div class="panel-title">Jury vs Public</div><div id="par-wrap"><svg id="par-svg"></svg></div></div>
 </div>
 <div id="overlay">
   <div id="overlay-box">
@@ -129,7 +129,11 @@ function selectCountry(country){
 }
 
 function countryKey(name){
-  const map = new Map([["Czech Republic","Czechia"],["Bosnia and Herzegovina","Bosnia & Herzegovina"],["North Macedonia","Macedonia"]]);
+  const map = new Map([
+    ["Czech Republic", "Czechia"],
+    ["Bosnia and Herzegovina", "Bosnia & Herzegovina"],
+    ["Macedonia", "North Macedonia"]
+  ]);
   return map.get(name) || name;
 }
 function youtubeEmbed(url){
@@ -145,7 +149,7 @@ function showYoutube(entry, artistSong){
   d3.select("#yt-placeholder").style("display", embed ? "none" : "block");
   content.style("display", embed ? "block" : "none");
   if(!embed) return;
-  content.html(`<div id="yt-iframe-wrap"><iframe src="${embed}" allowfullscreen></iframe></div><div id="yt-info"><strong>${entry.country}</strong><span>${artistSong?.artist || "N/A"} — ${artistSong?.song || "N/A"}</span><br><span>Final place: ${entry.place_final}</span></div>`);
+  content.html(`<div id="yt-iframe-wrap"><iframe src="${embed}" allowfullscreen></iframe></div><div id="yt-info"><strong>${entry.country}</strong><span>${artistSong?.artist || "N/A"} - ${artistSong?.song || "N/A"}</span><br><span>Final place: ${entry.place_final}</span></div>`);
 }
 
 function renderMap(worldData, contestants, artistsSongs, resetSelection){
@@ -189,14 +193,62 @@ function renderMap(worldData, contestants, artistsSongs, resetSelection){
 
   function getEntry(feature){ return yearMap.get(countryKey(getName(feature))); }
   function getArtistSong(country){ return (artistSongByYearCountry.get(selectedYear) || new Map()).get(country); }
-  function countryFill(entry, name){ if(!entry) return "#d9d9d9"; if(name === selectedCountry && entry.place_final === 1) return "#8c6d1f"; if(name === selectedCountry) return "#1f4e79"; if(entry.place_final === 1) return "#d4af37"; return "#9ecae1"; }
+  function countryFill(entry, name) {
+    if (!entry) return "#d9d9d9";
 
-  function apply(selection, inset=false){
-    selection.attr("fill", d => countryFill(getEntry(d), getName(d))).attr("stroke", d => getName(d) === selectedCountry ? "#08306b" : "#fff").attr("stroke-width", d => getName(d) === selectedCountry ? 2.5 : .8).style("cursor", d => getEntry(d) ? "pointer" : "default")
-      .on("mouseover", function(event,d){ const entry=getEntry(d); if(!entry) return; const as=getArtistSong(entry.country); d3.select(this).attr("stroke","#222").attr("stroke-width",2); tooltip.style("visibility","visible").html(`<strong>${entry.country}</strong><br>Singer: ${as?.artist || "N/A"}<br>Song: ${as?.song || "N/A"}<br>Final place: ${entry.place_final}`); })
-      .on("mousemove", event => tooltip.style("top", `${event.pageY+12}px`).style("left", `${event.pageX+12}px`))
-      .on("mouseout", function(event,d){ const entry=getEntry(d), name=getName(d); d3.select(this).attr("fill", countryFill(entry,name)).attr("stroke", name===selectedCountry?"#08306b":"#fff").attr("stroke-width", name===selectedCountry?2.5:.8); tooltip.style("visibility","hidden"); })
-      .on("click", function(event,d){ const entry = getEntry(d); if(!entry) return; showYoutube(entry, getArtistSong(entry.country)); selectCountry(entry.country);});
+    const key = countryKey(name);
+
+    if (key === selectedCountry && entry.place_final === 1) return "#8c6d1f";
+    if (key === selectedCountry) return "#1f4e79";
+    if (entry.place_final === 1) return "#d4af37";
+
+    return "#9ecae1";
+  }
+
+  function apply(selection){
+    selection
+      .attr("fill", d => countryFill(getEntry(d), getName(d)))
+      .attr("stroke", d => countryKey(getName(d)) === selectedCountry ? "#08306b" : "#fff")
+      .attr("stroke-width", d => countryKey(getName(d)) === selectedCountry ? 2.5 : .8)
+      .style("cursor", d => getEntry(d) ? "pointer" : "default")
+      .on("mouseover", function(event,d){
+        const entry = getEntry(d);
+        if(!entry) return;
+
+        const as = getArtistSong(entry.country);
+
+        d3.select(this)
+          .attr("stroke","#222")
+          .attr("stroke-width",2);
+
+        tooltip
+          .style("visibility","visible")
+          .html(`<strong>${entry.country}</strong><br>Singer: ${as?.artist || "N/A"}<br>Song: ${as?.song || "N/A"}<br>Final place: ${entry.place_final}`);
+      })
+      .on("mousemove", event => {
+        tooltip
+          .style("top", `${event.pageY+12}px`)
+          .style("left", `${event.pageX+12}px`);
+      })
+      .on("mouseout", function(event,d){
+        const entry = getEntry(d);
+        const name = getName(d);
+        const key = countryKey(name);
+
+        d3.select(this)
+          .attr("fill", countryFill(entry, name))
+          .attr("stroke", key === selectedCountry ? "#08306b" : "#fff")
+          .attr("stroke-width", key === selectedCountry ? 2.5 : .8);
+
+        tooltip.style("visibility","hidden");
+      })
+      .on("click", function(event,d){
+        const entry = getEntry(d);
+        if(!entry) return;
+
+        showYoutube(entry, getArtistSong(entry.country));
+        selectCountry(entry.country);
+      });
   }
 
   const mapCountries = mapGroup.selectAll("path.country").data(mapData.features).join("path").attr("class","country").attr("d",path);
@@ -543,8 +595,7 @@ function renderParallel(scoresWide, contestants){
 
     function selectThis(event){
       event.stopPropagation();
-      selectedCountry = selectedCountry === d.country ? null : d.country;
-      applySelection(selectedCountry);
+      selectCountry(d.country);
     }
 
     for (const pts of [ptsL, ptsR]) {
