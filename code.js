@@ -335,7 +335,7 @@ function renderMap(worldData, contestants, artistsSongs, resetSelection) {
     selection
       .attr("fill", (d) => countryFill(getEntry(d), getName(d)))
       .attr("stroke", (d) =>
-        countryKey(getName(d)) === selectedCountry ? "#08306b" : "#fff",
+        countryKey(getName(d)) === selectedCountry ? "#000" : "#fff",
       )
       .attr("stroke-width", (d) =>
         countryKey(getName(d)) === selectedCountry ? 2.5 : 0.8,
@@ -347,7 +347,7 @@ function renderMap(worldData, contestants, artistsSongs, resetSelection) {
 
         const as = getArtistSong(entry.country);
 
-        d3.select(this).attr("stroke", "#222").attr("stroke-width", 2);
+        d3.select(this).attr("stroke", "#000").attr("stroke-width", 2);
 
         tooltip
           .style("visibility", "visible")
