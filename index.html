@@ -194,7 +194,7 @@ function render() {
   const n = rows.length;
   const iH = H - MARGIN.top - MARGIN.bottom;
 
-  const sorted = [...rows].sort((a,b) => b.jury - a.jury);
+  const sorted = [...rows].sort((a, b) => (a.place || 99) - (b.place || 99))
   const midY = new Map(sorted.map((d,i) => [d.country, MARGIN.top + i * iH / (n-1)]));
 
   rows.forEach(d => {
