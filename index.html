@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Eurovision — Jury vs Public 2016–2023</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: #f0f2f5; color: #1a1a2e; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+#topbar {
+  background: #fff; border-bottom: 1px solid #dde3ed;
+  padding: 10px 22px; display: flex; align-items: center; gap: 14px;
+  flex-shrink: 0; box-shadow: 0 1px 4px rgba(0,0,0,.06); z-index: 10;
+}
+#topbar h1 { font-size: .98rem; font-weight: 700; letter-spacing: -.3px; }
+#topbar h1 span { color: #2563eb; }
+#year-select {
+  appearance: none;
+  background: #f5f7fa url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 9px center;
+  border: 1px solid #d0d5dd; border-radius: 6px; padding: 5px 28px 5px 10px;
+  font-family: 'Inter', sans-serif; font-size: .82rem; font-weight: 500; color: #1a1a2e; cursor: pointer;
+}
+#year-select:focus { outline: none; border-color: #2563eb; }
+.topbar-hint { font-size: .73rem; color: #9ca3af; margin-left: auto; }
+.legend { display: flex; gap: 8px; }
+.lp { display: flex; align-items: center; gap: 5px; font-size: .7rem; font-weight: 500; color: #555; background: #f5f7fa; border: 1px solid #e5e9ef; border-radius: 20px; padding: 3px 9px; }
+.lp-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+#main { display: flex; flex: 1; overflow: hidden; }
+#chart-panel { flex: 1; background: #edf1f7; position: relative; overflow: hidden; }
+#chart-panel svg { width: 100%; height: 100%; }
+
+.grid-line  { stroke: #e4e9f2; stroke-width: 1; }
+.axis-line  { stroke: #c8d4e4; stroke-width: 1.5; }
+.axis-tick  { stroke: #c8d4e4; stroke-width: 1; }
+.tick-label { font-size: 9px; fill: #9ca3af; font-family: 'Inter', sans-serif; }
+.col-title  { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; font-family: 'Inter', sans-serif; }
+
+.conn { fill: none; transition: stroke-width .1s, opacity .1s; cursor: pointer; }
+.conn.faded { opacity: .07 !important; stroke-width: 1 !important; }
+.ctry-label { font-family: 'Inter', sans-serif; fill: #374151; cursor: pointer; }
+.ctry-label.faded { fill: #c8d0dc; }
+.ctry-label.selected { font-weight: 700; }
+.dot { cursor: pointer; }
+.dot.faded { opacity: .1 !important; }
+
+#sidebar { width: 300px; background: #fff; border-left: 1px solid #dde3ed; display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; }
+#sc { flex: 1; overflow-y: auto; padding: 20px; }
+#ph { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 10px; text-align: center; color: #9ca3af; }
+#ph p { font-size: .8rem; line-height: 1.55; }
+#cd { display: none; }
+#cd h2 { font-size: 1.2rem; font-weight: 700; letter-spacing: -.4px; margin-bottom: 10px; }
+.meta { display: grid; grid-template-columns: auto 1fr; gap: 3px 8px; font-size: .77rem; color: #555; margin-bottom: 8px; }
+.mk { font-weight: 600; color: #1a1a2e; }
+.meta a { color: #2563eb; text-decoration: none; }
+.meta a:hover { text-decoration: underline; }
+.sec { font-size: .67rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #9ca3af; margin: 14px 0 8px; padding-bottom: 5px; border-bottom: 1px solid #f0f2f5; }
+.score-cmp { display: flex; gap: 8px; margin-bottom: 12px; }
+.score-box { flex: 1; border-radius: 8px; padding: 10px 8px; text-align: center; }
+.score-val { font-size: 1.4rem; font-weight: 700; line-height: 1; }
+.score-lbl { font-size: .64rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: #8a96aa; margin-top: 3px; }
+.hbar-row { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; }
+.hbar-side { width: 46px; font-weight: 600; font-size: .67rem; letter-spacing: .04em; text-transform: uppercase; }
+.hbar-side.jury { color: #2563eb; text-align: right; }
+.hbar-side.tele { color: #059669; }
+.hbar-track { flex: 1; height: 13px; background: #f0f2f5; border-radius: 3px; overflow: hidden; }
+.hbar-fill { height: 100%; border-radius: 3px; }
+.hbar-val { font-size: .72rem; font-weight: 700; color: #1a1a2e; width: 36px; }
+.rank-row { display: flex; align-items: center; gap: 8px; font-size: .77rem; margin-bottom: 5px; color: #555; }
+.rank-row strong { color: #1a1a2e; }
+.div-badge { display: inline-flex; align-items: center; gap: 5px; font-size: .72rem; font-weight: 600; padding: 4px 10px; border-radius: 20px; margin-bottom: 12px; }
+.bias-bar-wrap { margin: 10px 0; }
+.bias-bar-track { height: 12px; background: #f0f2f5; border-radius: 3px; position: relative; overflow: hidden; }
+.bias-bar-fill { height: 100%; position: absolute; border-radius: 3px; }
+.bias-zero { position: absolute; top: 0; bottom: 0; width: 1.5px; background: #9ca3af; }
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <h1>Eurovision <span>Jury vs Public</span> · 2016–2023</h1>
+  <select id="year-select"></select>
+  <div class="legend">
+    <div class="lp"><div class="lp-dot" style="background:#2563eb"></div>Jury favoured</div>
+    <div class="lp"><div class="lp-dot" style="background:#059669"></div>Public favoured</div>
+    <div class="lp"><div class="lp-dot" style="background:#d97706"></div>Agreement</div>
+  </div>
+  <span class="topbar-hint">Click a country to see details →</span>
+</div>
+
+<div id="main">
+  <div id="chart-panel"><svg id="svg"></svg></div>
+  <div id="sidebar">
+    <div id="sc">
+      <div id="ph">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5">
+          <path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 4-6"/>
+        </svg>
+        <p>Click any <strong style="color:#1a1a2e">country line</strong> or label to see its jury vs. public vote breakdown.</p>
+      </div>
+      <div id="cd"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const ALL = {"2016":[{"country":"Ukraine","jury":211,"tele":323,"total":534,"bias":-112,"performer":"1944","song":"Jamala","place":1,"yt":"https://youtube.com/watch?v=B-rnM-MwRHY"},{"country":"Australia","jury":320,"tele":191,"total":511,"bias":129,"performer":"Silence","song":"Sound of  Dami Im","place":2,"yt":"https://youtube.com/watch?v=5ymFX91HwM0"},{"country":"Russia","jury":130,"tele":361,"total":491,"bias":-231,"performer":"One","song":"You Are the Only  Sergey Lazarev","place":3,"yt":"https://youtube.com/watch?v=e94dst20C9Y"},{"country":"Bulgaria","jury":127,"tele":180,"total":307,"bias":-53,"performer":"Crime","song":"If Love Was a  Poli Genova","place":4,"yt":"https://youtube.com/watch?v=PQqUTigWKHY"},{"country":"Sweden","jury":122,"tele":139,"total":261,"bias":-17,"performer":"Sorry","song":"If I Were  Frans","place":5,"yt":"https://youtube.com/watch?v=2AIPrVchJN8"},{"country":"France","jury":148,"tele":109,"total":257,"bias":39,"performer":"cherché","song":"J'ai  Amir","place":6,"yt":"https://youtube.com/watch?v=-aLPsiyavcU"},{"country":"Armenia","jury":115,"tele":134,"total":249,"bias":-19,"performer":"LoveWave","song":"Iveta Mukuchyan","place":7,"yt":"https://youtube.com/watch?v=nL066Rp7J7k"},{"country":"Poland","jury":7,"tele":222,"total":229,"bias":-215,"performer":"Life","song":"Color of Your  Michał Szpak","place":8,"yt":"https://youtube.com/watch?v=87BBmxm7IJU"},{"country":"Lithuania","jury":104,"tele":96,"total":200,"bias":8,"performer":"Night","song":"I've Been Waiting for This  Donny Montell","place":9,"yt":"https://youtube.com/watch?v=O1wS7NNCo38"},{"country":"Belgium","jury":130,"tele":51,"total":181,"bias":79,"performer":"Pressure","song":"What's the  Laura Tesoro","place":10,"yt":"https://youtube.com/watch?v=xDBjhAGaeWg"},{"country":"Netherlands","jury":114,"tele":39,"total":153,"bias":75,"performer":"Down","song":"Slow  Douwe Bob","place":11,"yt":"https://youtube.com/watch?v=PwF9DI89q1w"},{"country":"Malta","jury":137,"tele":16,"total":153,"bias":121,"performer":"Water","song":"Walk on  Ira Losco","place":12,"yt":"https://youtube.com/watch?v=58YS5m3EYVY"},{"country":"Austria","jury":31,"tele":120,"total":151,"bias":-89,"performer":"d'ici","song":"Loin  Zoë","place":13,"yt":"https://youtube.com/watch?v=3xuPYt5i5cE"},{"country":"Israel","jury":124,"tele":11,"total":135,"bias":113,"performer":"Stars","song":"Made of  Hovi Star","place":14,"yt":"https://youtube.com/watch?v=SS5TB2XUdgs"},{"country":"Latvia","jury":69,"tele":63,"total":132,"bias":6,"performer":"Heartbeat","song":"Justs","place":15,"yt":"https://youtube.com/watch?v=o-2Lt7zzlBU"},{"country":"Italy","jury":90,"tele":34,"total":124,"bias":56,"performer":"Separation","song":"No Degree of  Francesca Michielin","place":16,"yt":"https://youtube.com/watch?v=YfnhDfy8AjU"},{"country":"Azerbaijan","jury":44,"tele":73,"total":117,"bias":-29,"performer":"Miracle","song":"Samra","place":17,"yt":"https://youtube.com/watch?v=cB8eSLyffsI"},{"country":"Serbia","jury":35,"tele":80,"total":115,"bias":-45,"performer":"(Shelter)","song":"Goodbye  Sanja Vučić ZAA","place":18,"yt":"https://youtube.com/watch?v=yTlxLiSQWjk"},{"country":"Hungary","jury":52,"tele":56,"total":108,"bias":-4,"performer":"Pioneer","song":"Freddie","place":19,"yt":"https://youtube.com/watch?v=bT2DcpqvorI"},{"country":"Georgia","jury":80,"tele":24,"total":104,"bias":56,"performer":"Gold","song":"Midnight  Nika Kocharov & Young Georgian Lolitaz","place":20,"yt":"https://youtube.com/watch?v=rviE2-9eiTI"},{"country":"Cyprus","jury":43,"tele":53,"total":96,"bias":-10,"performer":"Ego","song":"Alter  Minus One","place":21,"yt":"https://youtube.com/watch?v=idUxTqmCFR0"},{"country":"Spain","jury":67,"tele":10,"total":77,"bias":57,"performer":"Yay!","song":"Say  Barei","place":22,"yt":"https://youtube.com/watch?v=EgbjNsxehrY"},{"country":"Croatia","jury":40,"tele":33,"total":73,"bias":7,"performer":"Lighthouse","song":"Nina Kraljić","place":23,"yt":"https://youtube.com/watch?v=8QUM-_EbE2o"},{"country":"United Kingdom","jury":54,"tele":8,"total":62,"bias":46,"performer":"Alone","song":"You're Not  Joe & Jake","place":24,"yt":"https://youtube.com/watch?v=XgGahKsBtts"},{"country":"Czechia","jury":41,"tele":0,"total":41,"bias":41,"performer":"Stand","song":"I  Gabriela Gunčíková","place":25,"yt":"https://youtube.com/watch?v=wVy3rTNSN4Y"},{"country":"Germany","jury":1,"tele":10,"total":11,"bias":-9,"performer":"Ghost","song":"Jamie-Lee","place":26,"yt":"https://youtube.com/watch?v=bHDHi37bboE"}],"2017":[{"country":"Portugal","jury":382,"tele":376,"total":758,"bias":6,"performer":"dois","song":"Amar pelos  Salvador Sobral","place":1,"yt":"https://youtube.com/watch?v=Qotooj7ODCM"},{"country":"Bulgaria","jury":278,"tele":337,"total":615,"bias":-59,"performer":"Mess","song":"Beautiful  Kristian Kostov","place":2,"yt":"https://youtube.com/watch?v=OMmm-G078LM"},{"country":"Moldova","jury":110,"tele":264,"total":374,"bias":-154,"performer":"Mamma","song":"Hey  Sunstroke Project","place":3,"yt":"https://youtube.com/watch?v=SWaQdHoCvYk"},{"country":"Belgium","jury":108,"tele":255,"total":363,"bias":-147,"performer":"Lights","song":"City  Blanche","place":4,"yt":"https://youtube.com/watch?v=oxsCmChDYwA"},{"country":"Sweden","jury":218,"tele":126,"total":344,"bias":92,"performer":"On","song":"I Can't Go  Robin Bengtsson","place":5,"yt":"https://youtube.com/watch?v=RjH_4oYqLw4"},{"country":"Italy","jury":126,"tele":208,"total":334,"bias":-82,"performer":"Karma","song":"Occidentali's  Francesco Gabbani","place":6,"yt":"https://youtube.com/watch?v=KieE_MLv-ZY"},{"country":"Romania","jury":58,"tele":224,"total":282,"bias":-166,"performer":"It!","song":"Yodel  Ilinca feat. Alex Florea","place":7,"yt":"https://youtube.com/watch?v=ZSHc7iDuBCQ"},{"country":"Hungary","jury":48,"tele":152,"total":200,"bias":-104,"performer":"Origo","song":"Joci Pápai","place":8,"yt":"https://youtube.com/watch?v=hqM0AkP7zcI"},{"country":"Australia","jury":171,"tele":2,"total":173,"bias":169,"performer":"Easy","song":"Don't Come  Isaiah","place":9,"yt":"https://youtube.com/watch?v=YTCP4S1dqwA"},{"country":"Norway","jury":129,"tele":29,"total":158,"bias":100,"performer":"Moment","song":"Grab the  Jowst","place":10,"yt":"https://youtube.com/watch?v=U-Bk0PCotY0"},{"country":"Netherlands","jury":135,"tele":15,"total":150,"bias":120,"performer":"Shadows","song":"Lights And  OG3NE","place":11,"yt":"https://youtube.com/watch?v=_9XsCqGg8ls"},{"country":"France","jury":45,"tele":90,"total":135,"bias":-45,"performer":"Requiem","song":"Alma","place":12,"yt":"https://youtube.com/watch?v=HjiLKsLQl4I"},{"country":"Croatia","jury":25,"tele":103,"total":128,"bias":-78,"performer":"Friend","song":"My  Jacques Houdek","place":13,"yt":"https://youtube.com/watch?v=4Sya_GIxsw0"},{"country":"Azerbaijan","jury":78,"tele":42,"total":120,"bias":36,"performer":"Skeletons","song":"Dihaj","place":14,"yt":"https://youtube.com/watch?v=g_HSRHqd_7s"},{"country":"United Kingdom","jury":99,"tele":12,"total":111,"bias":87,"performer":"You","song":"Never Give Up on  Lucie Jones","place":15,"yt":"https://youtube.com/watch?v=Fl1GYTg4GmA"},{"country":"Austria","jury":93,"tele":0,"total":93,"bias":93,"performer":"Air","song":"Running On  Nathan Trent","place":16,"yt":"https://youtube.com/watch?v=gJIjZF5sgzg"},{"country":"Belarus","jury":50,"tele":33,"total":83,"bias":17,"performer":"Life","song":"Story Of My  Naviband","place":17,"yt":"https://youtube.com/watch?v=coFfFZvPmRY"},{"country":"Armenia","jury":58,"tele":21,"total":79,"bias":37,"performer":"Me","song":"Fly With  Artsvik","place":18,"yt":"https://youtube.com/watch?v=g373Libigw8"},{"country":"Greece","jury":48,"tele":29,"total":77,"bias":19,"performer":"Love","song":"This is  Demy","place":19,"yt":"https://youtube.com/watch?v=iO14p2uCzkM"},{"country":"Denmark","jury":69,"tele":8,"total":77,"bias":61,"performer":"Am","song":"Where I  Anja","place":20,"yt":"https://youtube.com/watch?v=vUbGnq8maS0"},{"country":"Cyprus","jury":36,"tele":32,"total":68,"bias":4,"performer":"Gravity","song":"Hovig","place":21,"yt":"https://youtube.com/watch?v=ZDe9FCLgE04"},{"country":"Poland","jury":23,"tele":41,"total":64,"bias":-18,"performer":"Flashlight","song":"Kasia Moś","place":22,"yt":"https://youtube.com/watch?v=xVCokUW3BUo"},{"country":"Israel","jury":34,"tele":5,"total":39,"bias":29,"performer":"Alive","song":"I Feel  Imri Ziv","place":23,"yt":"https://youtube.com/watch?v=YapnW_zfWJk"},{"country":"Ukraine","jury":12,"tele":24,"total":36,"bias":-12,"performer":"Time","song":"O.Torvald","place":24,"yt":"https://youtube.com/watch?v=mogNLkIEI0k"},{"country":"Germany","jury":3,"tele":3,"total":6,"bias":0,"performer":"Life","song":"Perfect  Levina","place":25,"yt":"https://youtube.com/watch?v=t1KKjykH6fw"},{"country":"Spain","jury":0,"tele":5,"total":5,"bias":-5,"performer":"Lover","song":"Do It for Your  Manel Navarro","place":26,"yt":"https://youtube.com/watch?v=qAOXHdLdlqQ"}],"2018":[{"country":"Israel","jury":212,"tele":317,"total":529,"bias":-105,"performer":"Toy","song":"Netta","place":1,"yt":"https://youtube.com/watch?v=84LBjXaeKk4"},{"country":"Cyprus","jury":183,"tele":253,"total":436,"bias":-70,"performer":"Fuego","song":"Eleni Foureira","place":2,"yt":"https://youtube.com/watch?v=vyDTbJ4wenY"},{"country":"Austria","jury":271,"tele":71,"total":342,"bias":200,"performer":"You","song":"Nobody But  Cesár Sampson","place":3,"yt":"https://youtube.com/watch?v=a8Yvzo1puoE"},{"country":"Germany","jury":204,"tele":136,"total":340,"bias":68,"performer":"Alone","song":"You Let Me Walk  Michael Schulte","place":4,"yt":"https://youtube.com/watch?v=N4YwSy4Q9k0"},{"country":"Italy","jury":59,"tele":249,"total":308,"bias":-190,"performer":"niente","song":"Non mi avete fatto  Ermal Meta & Fabrizio Moro","place":5,"yt":"https://youtube.com/watch?v=81M-mp5t8uM"},{"country":"Czechia","jury":66,"tele":215,"total":281,"bias":-149,"performer":"Me","song":"Lie To  Mikolas Josef","place":6,"yt":"https://youtube.com/watch?v=w0ZUuQe0shk"},{"country":"Sweden","jury":253,"tele":21,"total":274,"bias":232,"performer":"Off","song":"Dance You  Benjamin Ingrosso","place":7,"yt":"https://youtube.com/watch?v=z101xtUBflU"},{"country":"Estonia","jury":143,"tele":102,"total":245,"bias":41,"performer":"forza","song":"La  Elina Nechayeva","place":8,"yt":"https://youtube.com/watch?v=ImawXdXIGd8"},{"country":"Denmark","jury":38,"tele":188,"total":226,"bias":-150,"performer":"Ground","song":"Higher  Rasmussen","place":9,"yt":"https://youtube.com/watch?v=c0kP074Mw0k"},{"country":"Moldova","jury":94,"tele":115,"total":209,"bias":-21,"performer":"Day","song":"My Lucky  DoReDos","place":10,"yt":"https://youtube.com/watch?v=5evrVL1rJPA"},{"country":"Albania","jury":126,"tele":58,"total":184,"bias":68,"performer":"Mall","song":"Eugent Bushpepa","place":11,"yt":"https://youtube.com/watch?v=uyl1b1fVmdU"},{"country":"Lithuania","jury":90,"tele":91,"total":181,"bias":-1,"performer":"Old","song":"When We're  Ieva Zasimauskaitė","place":12,"yt":"https://youtube.com/watch?v=pPDFhfU25go"},{"country":"France","jury":114,"tele":59,"total":173,"bias":55,"performer":"Mercy","song":"Madame Monsieur","place":13,"yt":"https://youtube.com/watch?v=vjLuTtUv0Ns"},{"country":"Bulgaria","jury":100,"tele":66,"total":166,"bias":34,"performer":"Bones","song":"Equinox","place":14,"yt":"https://youtube.com/watch?v=vC-1tdGDFQc"},{"country":"Norway","jury":60,"tele":84,"total":144,"bias":-24,"performer":"Song","song":"That's How You Write a  Alexander Rybak","place":15,"yt":"https://youtube.com/watch?v=N17BdRwOvBA"},{"country":"Ireland","jury":74,"tele":62,"total":136,"bias":12,"performer":"Together","song":"Ryan O'Shaughnessy","place":16,"yt":"https://youtube.com/watch?v=QD1cQ2wZ1dk"},{"country":"Ukraine","jury":11,"tele":119,"total":130,"bias":-108,"performer":"Ladder","song":"Under The  Mélovin","place":17,"yt":"https://youtube.com/watch?v=lhOuMYtQ94M"},{"country":"Netherlands","jury":89,"tele":32,"total":121,"bias":57,"performer":"'Em","song":"Outlaw In  Waylon","place":18,"yt":"https://youtube.com/watch?v=p7jHz5asMs8"},{"country":"Serbia","jury":38,"tele":75,"total":113,"bias":-37,"performer":"deca","song":"Nova  Sanja Ilić & Balkanika","place":19,"yt":"https://youtube.com/watch?v=WRQWQShbPHU"},{"country":"Australia","jury":90,"tele":9,"total":99,"bias":81,"performer":"Love","song":"We Got  Jessica Mauboy","place":20,"yt":"https://youtube.com/watch?v=2BBLTY6T2Ck"},{"country":"Hungary","jury":28,"tele":65,"total":93,"bias":-37,"performer":"nyár","song":"Viszlát  AWS","place":21,"yt":"https://youtube.com/watch?v=p6e1TmYb33w"},{"country":"Slovenia","jury":41,"tele":23,"total":64,"bias":18,"performer":"ne!","song":"Hvala,  Lea Sirk","place":22,"yt":"https://youtube.com/watch?v=fBU0_hfST_o"},{"country":"Spain","jury":43,"tele":18,"total":61,"bias":25,"performer":"canción","song":"Tu  Amaia & Alfred","place":23,"yt":"https://youtube.com/watch?v=28oMEFgSoyk"},{"country":"United Kingdom","jury":23,"tele":25,"total":48,"bias":-2,"performer":"Storm","song":"SuRie","place":24,"yt":"https://youtube.com/watch?v=8dmlXBBC6J8"},{"country":"Finland","jury":23,"tele":23,"total":46,"bias":0,"performer":"Monsters","song":"Saara Aalto","place":25,"yt":"https://youtube.com/watch?v=hdjiuCUUpPc"},{"country":"Portugal","jury":21,"tele":18,"total":39,"bias":3,"performer":"jardim","song":"O  Cláudia Pascoal","place":26,"yt":"https://youtube.com/watch?v=mHjGbADMcOI"}],"2019":[{"country":"Netherlands","jury":237,"tele":261,"total":498,"bias":-24,"performer":"Arcade","song":"Duncan Laurence","place":1,"yt":"https://youtube.com/watch?v=R3D-r4ogr7s"},{"country":"Italy","jury":219,"tele":253,"total":472,"bias":-34,"performer":"Soldi","song":"Mahmood","place":2,"yt":"https://youtube.com/watch?v=M-aoyPa41Ic"},{"country":"Russia","jury":126,"tele":244,"total":370,"bias":-118,"performer":"Scream","song":"Sergey Lazarev","place":3,"yt":"https://youtube.com/watch?v=eNzlxEZ_JG4"},{"country":"Switzerland","jury":152,"tele":212,"total":364,"bias":-60,"performer":"Me","song":"She Got  Luca Hänni","place":4,"yt":"https://youtube.com/watch?v=8aUYzqAIdoM"},{"country":"Sweden","jury":241,"tele":93,"total":334,"bias":148,"performer":"Love","song":"Too Late for  John Lundvik","place":5,"yt":"https://youtube.com/watch?v=oEdWkdVKIqQ"},{"country":"Norway","jury":40,"tele":291,"total":331,"bias":-251,"performer":"Sky","song":"Spirit In The  KEiiNO","place":6,"yt":"https://youtube.com/watch?v=Ovt7YGHAj8I"},{"country":"Azerbaijan","jury":202,"tele":100,"total":302,"bias":102,"performer":"Truth","song":"Chingiz","place":8,"yt":"https://youtube.com/watch?v=D6vvuCiHwSs"},{"country":"Australia","jury":153,"tele":131,"total":284,"bias":22,"performer":"Gravity","song":"Zero  Kate Miller-Heidke","place":9,"yt":"https://youtube.com/watch?v=Eo5H62mCIsg"},{"country":"Iceland","jury":46,"tele":186,"total":232,"bias":-140,"performer":"sigra","song":"Hatrið mun  Hatari","place":10,"yt":"https://youtube.com/watch?v=kTb69WkBbvs"},{"country":"Czechia","jury":150,"tele":7,"total":157,"bias":143,"performer":"Friend","song":"of a  Lake Malawi","place":11,"yt":"https://youtube.com/watch?v=NJxLKFZKhNs"},{"country":"Denmark","jury":69,"tele":51,"total":120,"bias":18,"performer":"Forever","song":"Love is  Leonora","place":12,"yt":"https://youtube.com/watch?v=mucmvTLHJQM"},{"country":"Cyprus","jury":77,"tele":32,"total":109,"bias":45,"performer":"Replay","song":"Tamta","place":13,"yt":"https://youtube.com/watch?v=wIpEI-NhRxg"},{"country":"Malta","jury":87,"tele":20,"total":107,"bias":67,"performer":"Chameleon","song":"Michela","place":14,"yt":"https://youtube.com/watch?v=H-byNyainRA"},{"country":"Slovenia","jury":46,"tele":59,"total":105,"bias":-13,"performer":"Sebi","song":"Zala Kralj & Gašper Šantl","place":15,"yt":"https://youtube.com/watch?v=vGtPNQ6g6Ng"},{"country":"France","jury":67,"tele":38,"total":105,"bias":29,"performer":"Roi","song":"Bilal Hassani","place":16,"yt":"https://youtube.com/watch?v=AjZNbIQtWvw"},{"country":"Albania","jury":43,"tele":47,"total":90,"bias":-4,"performer":"tokës","song":"Ktheju  Jonida Maliqi","place":17,"yt":"https://youtube.com/watch?v=-NAbYUoxIfg"},{"country":"Serbia","jury":35,"tele":54,"total":89,"bias":-19,"performer":"Kruna","song":"Nevena Božović","place":18,"yt":"https://youtube.com/watch?v=X0mdaeAyPvA"},{"country":"San Marino","jury":12,"tele":65,"total":77,"bias":-53,"performer":"Na","song":"Say    Serhat","place":19,"yt":"https://youtube.com/watch?v=d_iEis_ZRoQ"},{"country":"Estonia","jury":28,"tele":48,"total":76,"bias":-20,"performer":"Storm","song":"Victor Crone","place":20,"yt":"https://youtube.com/watch?v=PppvSl3_W4E"},{"country":"Greece","jury":50,"tele":24,"total":74,"bias":26,"performer":"Love","song":"Better  Katerine Duska","place":21,"yt":"https://youtube.com/watch?v=5pQV_-40m_U"},{"country":"Spain","jury":1,"tele":53,"total":54,"bias":-52,"performer":"venda","song":"La  Miki","place":22,"yt":"https://youtube.com/watch?v=lWXuohnM14U"},{"country":"Israel","jury":0,"tele":35,"total":35,"bias":-35,"performer":"Home","song":"Kobi Marimi","place":23,"yt":"https://youtube.com/watch?v=uCdS42uCqP0"},{"country":"Belarus","jury":18,"tele":13,"total":31,"bias":5,"performer":"It","song":"Like  Zena","place":24,"yt":"https://youtube.com/watch?v=C1Y9LBusHzA"},{"country":"Germany","jury":24,"tele":0,"total":24,"bias":24,"performer":"Sister","song":"S!sters","place":25,"yt":"https://youtube.com/watch?v=yFbSj_yPCPM"},{"country":"United Kingdom","jury":8,"tele":3,"total":11,"bias":5,"performer":"Us","song":"Bigger Than  Michael Rice","place":26,"yt":"https://youtube.com/watch?v=HV-eOhTS8Dw"},{"country":"North Macedonia","jury":247,"tele":58,"total":305,"bias":189,"performer":"","song":"","place":null,"yt":""}],"2021":[{"country":"Italy","jury":206,"tele":318,"total":524,"bias":-112,"performer":"buoni","song":"Zitti e  Måneskin","place":1,"yt":"https://youtube.com/watch?v=RVH5dn1cxAQ"},{"country":"France","jury":248,"tele":251,"total":499,"bias":-3,"performer":"Voilà","song":"Barbara Pravi","place":2,"yt":"https://youtube.com/watch?v=Unj9WbeLzRU"},{"country":"Switzerland","jury":267,"tele":165,"total":432,"bias":102,"performer":"l'univers","song":"Tout  Gjon's Tears","place":3,"yt":"https://youtube.com/watch?v=jznH_fltcYA"},{"country":"Iceland","jury":198,"tele":180,"total":378,"bias":18,"performer":"Years","song":"10  Daði & Gagnamagnið","place":4,"yt":"https://youtube.com/watch?v=YSMhu-PrLME"},{"country":"Ukraine","jury":97,"tele":267,"total":364,"bias":-170,"performer":"Shum","song":"Go_A","place":5,"yt":"https://youtube.com/watch?v=lqvzDkgok_g"},{"country":"Finland","jury":83,"tele":218,"total":301,"bias":-135,"performer":"Side","song":"Dark  Blind Channel","place":6,"yt":"https://youtube.com/watch?v=fOPGxQ4fgVw"},{"country":"Malta","jury":208,"tele":47,"total":255,"bias":161,"performer":"casse","song":"Je me  Destiny","place":7,"yt":"https://youtube.com/watch?v=jbbc2yKnv0M"},{"country":"Lithuania","jury":55,"tele":165,"total":220,"bias":-110,"performer":"Discoteque","song":"The Roop","place":8,"yt":"https://youtube.com/watch?v=JNweec5olYw"},{"country":"Russia","jury":104,"tele":100,"total":204,"bias":4,"performer":"Woman","song":"Russian  Manizha","place":9,"yt":"https://youtube.com/watch?v=V-Di9A28e5E"},{"country":"Greece","jury":91,"tele":79,"total":170,"bias":12,"performer":"Dance","song":"Last  Stefania","place":10,"yt":"https://youtube.com/watch?v=QhZhJFp0vVw"},{"country":"Bulgaria","jury":140,"tele":30,"total":170,"bias":110,"performer":"Old","song":"Growing Up Is Getting  Victoria","place":11,"yt":"https://youtube.com/watch?v=B1ZiPrMwMYA"},{"country":"Portugal","jury":126,"tele":27,"total":153,"bias":99,"performer":"Side","song":"Love Is On My  The Black Mamba","place":12,"yt":"https://youtube.com/watch?v=qq9SceXaukA"},{"country":"Moldova","jury":53,"tele":62,"total":115,"bias":-9,"performer":"Sugar","song":"Natalia Gordienko","place":13,"yt":"https://youtube.com/watch?v=5I_1GTehgkI"},{"country":"Sweden","jury":46,"tele":63,"total":109,"bias":-17,"performer":"Voices","song":"Tusse","place":14,"yt":"https://youtube.com/watch?v=NyJRyif6_kk"},{"country":"Serbia","jury":20,"tele":82,"total":102,"bias":-62,"performer":"Loco","song":"Hurricane","place":15,"yt":"https://youtube.com/watch?v=Q1lkpIqf7a4"},{"country":"Cyprus","jury":50,"tele":44,"total":94,"bias":6,"performer":"Diablo","song":"El  Elena Tsagrinou","place":16,"yt":"https://youtube.com/watch?v=MgGc1F_cOE8"},{"country":"Israel","jury":73,"tele":20,"total":93,"bias":53,"performer":"Free","song":"Set Me  Eden Alene","place":17,"yt":"https://youtube.com/watch?v=5Y-blG5ptwo"},{"country":"Norway","jury":15,"tele":60,"total":75,"bias":-45,"performer":"Angel","song":"Fallen  TIX","place":18,"yt":"https://youtube.com/watch?v=F0r3vmGLzZU"},{"country":"Belgium","jury":71,"tele":3,"total":74,"bias":68,"performer":"Place","song":"The Wrong  Hooverphonic","place":19,"yt":"https://youtube.com/watch?v=HbpxcUMtjwY"},{"country":"Azerbaijan","jury":32,"tele":33,"total":65,"bias":-1,"performer":"Hari","song":"Mata  Efendi","place":20,"yt":"https://youtube.com/watch?v=FTQ22S5YC7Q"},{"country":"Albania","jury":22,"tele":35,"total":57,"bias":-13,"performer":"Karma","song":"Anxhela Peristeri","place":21,"yt":"https://youtube.com/watch?v=OxniMKVXjqM"},{"country":"San Marino","jury":37,"tele":13,"total":50,"bias":24,"performer":"Adrenalina","song":"Senhit feat. Flo Rida","place":22,"yt":"https://youtube.com/watch?v=TkhiH-JXFPs"},{"country":"Netherlands","jury":11,"tele":0,"total":11,"bias":11,"performer":"Age","song":"Birth Of A New  Jeangu Macrooy","place":23,"yt":"https://youtube.com/watch?v=o3Da5cr2fTs"},{"country":"Spain","jury":6,"tele":0,"total":6,"bias":6,"performer":"quedarme","song":"Voy a  Blas Cantó","place":24,"yt":"https://youtube.com/watch?v=thV-vhOQHvQ"},{"country":"Germany","jury":3,"tele":0,"total":3,"bias":3,"performer":"Hate","song":"I Don't Feel  Jendrik","place":25,"yt":"https://youtube.com/watch?v=1m0VEAfLV4E"},{"country":"United Kingdom","jury":0,"tele":0,"total":0,"bias":0,"performer":"Embers","song":"James Newman","place":26,"yt":"https://youtube.com/watch?v=VxNOynEJ6wc"}],"2022":[{"country":"Ukraine","jury":192,"tele":439,"total":631,"bias":-247,"performer":"Stefania","song":"Kalush Orchestra","place":1,"yt":"https://youtube.com/watch?v=F1fl60ypdLs"},{"country":"United Kingdom","jury":283,"tele":183,"total":466,"bias":100,"performer":"Man","song":"Space  Sam Ryder","place":2,"yt":"https://youtube.com/watch?v=RZ0hqX_92zI"},{"country":"Spain","jury":231,"tele":228,"total":459,"bias":3,"performer":"SloMo","song":"Chanel","place":3,"yt":"https://youtube.com/watch?v=jSQYTt4xg3I"},{"country":"Sweden","jury":258,"tele":180,"total":438,"bias":78,"performer":"Closer","song":"Hold Me  Cornelia Jakobs","place":4,"yt":"https://youtube.com/watch?v=i777psA2gP4"},{"country":"Serbia","jury":87,"tele":225,"total":312,"bias":-138,"performer":"sano","song":"In corpore  Konstrakta","place":5,"yt":"https://youtube.com/watch?v=nBtQj1MfNYA"},{"country":"Italy","jury":158,"tele":110,"total":268,"bias":48,"performer":"Brividi","song":"Mahmood & Blanco","place":6,"yt":"https://youtube.com/watch?v=blEy4xHuMbY"},{"country":"Moldova","jury":14,"tele":239,"total":253,"bias":-225,"performer":"Trenulețul","song":"Zdob și Zdub & Advahov Brothers","place":7,"yt":"https://youtube.com/watch?v=DUqf_zO2QaI"},{"country":"Greece","jury":158,"tele":57,"total":215,"bias":101,"performer":"Together","song":"Die  Amanda Georgiadi Tenfjord","place":8,"yt":"https://youtube.com/watch?v=BWeT0nJpB3Y"},{"country":"Portugal","jury":171,"tele":36,"total":207,"bias":135,"performer":"saudade","song":"Saudade,  Maro","place":9,"yt":"https://youtube.com/watch?v=mZtbD47u6yI"},{"country":"Norway","jury":36,"tele":146,"total":182,"bias":-110,"performer":"Banana","song":"Give That Wolf a  Subwoolfer","place":10,"yt":"https://youtube.com/watch?v=adCU2rQyDeY"},{"country":"Netherlands","jury":129,"tele":42,"total":171,"bias":87,"performer":"diepte","song":"De  S10","place":11,"yt":"https://youtube.com/watch?v=sgOnu7ux2-k"},{"country":"Poland","jury":46,"tele":105,"total":151,"bias":-59,"performer":"River","song":"Ochman","place":12,"yt":"https://youtube.com/watch?v=jRVDZ6446eM"},{"country":"Estonia","jury":43,"tele":98,"total":141,"bias":-55,"performer":"Hope","song":"Stefan","place":13,"yt":"https://youtube.com/watch?v=GdTpQmMem8U"},{"country":"Lithuania","jury":35,"tele":93,"total":128,"bias":-58,"performer":"Sentimentai","song":"Monika Liu","place":14,"yt":"https://youtube.com/watch?v=BVqSTVJhD44"},{"country":"Australia","jury":123,"tele":2,"total":125,"bias":121,"performer":"Same","song":"Not The  Sheldon Riley","place":15,"yt":"https://youtube.com/watch?v=wosfFz2FJPU"},{"country":"Azerbaijan","jury":103,"tele":3,"total":106,"bias":100,"performer":"Black","song":"Fade To  Nadir Rustamli","place":16,"yt":"https://youtube.com/watch?v=tegPzHEL4ms"},{"country":"Switzerland","jury":78,"tele":0,"total":78,"bias":78,"performer":"Cry","song":"Boys Do  Marius Bear","place":17,"yt":"https://youtube.com/watch?v=hq2HCmHv5p4"},{"country":"Romania","jury":12,"tele":53,"total":65,"bias":-41,"performer":"Llámame","song":"WRS","place":18,"yt":"https://youtube.com/watch?v=nPpuwy79sHs"},{"country":"Belgium","jury":59,"tele":5,"total":64,"bias":54,"performer":"You","song":"Miss  Jérémie Makiese","place":19,"yt":"https://youtube.com/watch?v=sB09advfF6E"},{"country":"Armenia","jury":40,"tele":21,"total":61,"bias":19,"performer":"Snap","song":"Rosa Linn","place":20,"yt":"https://youtube.com/watch?v=DAJ6vfmD_ic"},{"country":"Finland","jury":12,"tele":26,"total":38,"bias":-14,"performer":"Jezebel","song":"The Rasmus","place":21,"yt":"https://youtube.com/watch?v=LSi9nfr65FE"},{"country":"Czechia","jury":33,"tele":5,"total":38,"bias":28,"performer":"Off","song":"Lights  We Are Domi","place":22,"yt":"https://youtube.com/watch?v=EGRzSefqOm0"},{"country":"Iceland","jury":10,"tele":10,"total":20,"bias":0,"performer":"sól","song":"Með hækkandi  Systur","place":23,"yt":"https://youtube.com/watch?v=G71c48O3j-s"},{"country":"France","jury":9,"tele":8,"total":17,"bias":1,"performer":"Fulenn","song":"Alvan & Ahez","place":24,"yt":"https://youtube.com/watch?v=H1lcGXwOqJI"},{"country":"Germany","jury":0,"tele":6,"total":6,"bias":-6,"performer":"Rockstars","song":"Malik Harris","place":25,"yt":"https://youtube.com/watch?v=2BYIou-oWXA"}],"2023":[{"country":"Sweden","jury":340,"tele":243,"total":583,"bias":97,"performer":"Tattoo","song":"Loreen","place":1,"yt":"https://youtube.com/watch?v=BE2Fj0W4jP4"},{"country":"Finland","jury":150,"tele":376,"total":526,"bias":-226,"performer":"Cha","song":"Käärijä","place":2,"yt":"https://youtube.com/watch?v=l6rS8Dv5g-8"},{"country":"Israel","jury":177,"tele":185,"total":362,"bias":-8,"performer":"Unicorn","song":"Noa Kirel","place":3,"yt":"https://youtube.com/watch?v=Z3mIcCllJXY"},{"country":"Italy","jury":176,"tele":174,"total":350,"bias":2,"performer":"vite","song":"Due  Marco Mengoni","place":4,"yt":"https://youtube.com/watch?v=d6IiOSut_4M"},{"country":"Norway","jury":52,"tele":216,"total":268,"bias":-164,"performer":"Kings","song":"Queen of  Alessandra","place":5,"yt":"https://youtube.com/watch?v=PUHSM_vTqTI"},{"country":"Ukraine","jury":54,"tele":189,"total":243,"bias":-135,"performer":"Steel","song":"Heart of  Tvorchi","place":6,"yt":"https://youtube.com/watch?v=I2oqDpefJ1s"},{"country":"Belgium","jury":127,"tele":55,"total":182,"bias":72,"performer":"You","song":"Because of  Gustaph","place":7,"yt":"https://youtube.com/watch?v=U1xD14IMKtg"},{"country":"Estonia","jury":146,"tele":22,"total":168,"bias":124,"performer":"Bridges","song":"Alika","place":8,"yt":"https://youtube.com/watch?v=HsbC-OYMA3s"},{"country":"Australia","jury":130,"tele":21,"total":151,"bias":109,"performer":"Promise","song":"Voyager","place":9,"yt":"https://youtube.com/watch?v=GSoy_mJMlMY"},{"country":"Czechia","jury":94,"tele":35,"total":129,"bias":59,"performer":"Crown","song":"My Sister's  Vesna","place":10,"yt":"https://youtube.com/watch?v=ag8qxpvTTy0"},{"country":"Lithuania","jury":81,"tele":46,"total":127,"bias":35,"performer":"Stay","song":"Monika Linkytė","place":11,"yt":"https://youtube.com/watch?v=QsgouAEd34U"},{"country":"Cyprus","jury":68,"tele":58,"total":126,"bias":10,"performer":"Heart","song":"Break a Broken  Andrew Lambrou","place":12,"yt":"https://youtube.com/watch?v=49YiimKeyDI"},{"country":"Croatia","jury":11,"tele":112,"total":123,"bias":-101,"performer":"ŠČ!","song":"Mama  Let 3","place":13,"yt":"https://youtube.com/watch?v=hGuGfdEJ5Pw"},{"country":"Armenia","jury":69,"tele":53,"total":122,"bias":16,"performer":"Lover","song":"Future  Brunette","place":14,"yt":"https://youtube.com/watch?v=h0q7AkYk2hY"},{"country":"Austria","jury":104,"tele":16,"total":120,"bias":88,"performer":"Edgar?","song":"Who The Hell Is  Teya & Salena","place":15,"yt":"https://youtube.com/watch?v=8uk64V9h0Ko"},{"country":"France","jury":54,"tele":50,"total":104,"bias":4,"performer":"Évidemment","song":"La Zarra","place":16,"yt":"https://youtube.com/watch?v=fOtQJ4o-HoA"},{"country":"Spain","jury":95,"tele":5,"total":100,"bias":90,"performer":"Eaea","song":"Blanca Paloma","place":17,"yt":"https://youtube.com/watch?v=Vw6qPWhjevk"},{"country":"Moldova","jury":20,"tele":76,"total":96,"bias":-56,"performer":"Luna","song":"Soarele și  Pasha Parfeni","place":18,"yt":"https://youtube.com/watch?v=SABOfYgGk8M"},{"country":"Poland","jury":12,"tele":81,"total":93,"bias":-69,"performer":"Solo","song":"Blanka","place":19,"yt":"https://youtube.com/watch?v=SEgF1aP-U1o"},{"country":"Switzerland","jury":61,"tele":31,"total":92,"bias":30,"performer":"Watergun","song":"Remo Forrer","place":20,"yt":"https://youtube.com/watch?v=l4NDErv49mk"},{"country":"Slovenia","jury":33,"tele":45,"total":78,"bias":-12,"performer":"Diem","song":"Carpe  Joker Out","place":21,"yt":"https://youtube.com/watch?v=3LXlPviGiWc"},{"country":"Albania","jury":17,"tele":59,"total":76,"bias":-42,"performer":"Duje","song":"Albina & Familja Kelmendi","place":22,"yt":"https://youtube.com/watch?v=TI9rSDhXwyc"},{"country":"Portugal","jury":43,"tele":16,"total":59,"bias":27,"performer":"coração","song":"Ai  Mimicat","place":23,"yt":"https://youtube.com/watch?v=HYfkxX4PFyw"},{"country":"Serbia","jury":14,"tele":16,"total":30,"bias":-2,"performer":"spava","song":"Samo mi se  Luke Black","place":24,"yt":"https://youtube.com/watch?v=gPRfg9wzbpw"},{"country":"United Kingdom","jury":15,"tele":9,"total":24,"bias":6,"performer":"Song","song":"I Wrote A  Mae Muller","place":25,"yt":"https://youtube.com/watch?v=tvJEE2ryCRQ"},{"country":"Germany","jury":3,"tele":15,"total":18,"bias":-12,"performer":"Glitter","song":"Blood &  Lord Of The Lost","place":26,"yt":"https://youtube.com/watch?v=dyGR4YWlPEs"}]};
+
+const YEARS = Object.keys(ALL).sort();
+let year = '2023', selected = null;
+
+const ys = document.getElementById('year-select');
+YEARS.forEach(y => {
+  const o = document.createElement('option');
+  o.value = o.textContent = y;
+  if (y === year) o.selected = true;
+  ys.appendChild(o);
+});
+ys.onchange = e => { year = e.target.value; selected = null; render(); showPH(); };
+
+const MARGIN = { top: 58, right: 115, bottom: 30, left: 115 };
+const MAX_PTS = 460;  // same scale for both axes — jury & tele are same unit (points)
+
+function cat(d) {
+  const diff = Math.abs(d.bias);  // bias = jury - tele
+  const mx = Math.max(d.jury, d.tele, 1);
+  if (diff <= 0.12 * mx) return 'agree';
+  return d.bias > 0 ? 'jury' : 'tele';
+}
+const CAT_COL = { jury: '#2563eb', tele: '#059669', agree: '#d97706' };
+const col = d => CAT_COL[cat(d)];
+
+const svgEl = document.getElementById('svg');
+const svg = d3.select(svgEl);
+let W, H, xJ, xM, xT, yScale, axesG, dynG;
+
+function setupDims() {
+  W = svgEl.clientWidth; H = svgEl.clientHeight;
+  const iW = W - MARGIN.left - MARGIN.right;
+  const iH = H - MARGIN.top - MARGIN.bottom;
+  xJ = MARGIN.left; xM = MARGIN.left + iW / 2; xT = MARGIN.left + iW;
+  // Same scale for both axes — jury & tele are both in points
+  yScale = d3.scaleLinear().domain([0, MAX_PTS]).range([MARGIN.top + iH, MARGIN.top]);
+}
+
+function drawAxes() {
+  if (axesG) axesG.remove();
+  axesG = svg.append('g');
+  const iH = H - MARGIN.top - MARGIN.bottom;
+  const ticks = [0, 50, 100, 150, 200, 250, 300, 350, 400, 450];
+
+  ticks.forEach(v => {
+    const y = yScale(v);
+    axesG.append('line').attr('class','grid-line').attr('x1',xJ).attr('x2',xT).attr('y1',y).attr('y2',y);
+  });
+
+  [xJ, xT].forEach(x => axesG.append('line').attr('class','axis-line')
+    .attr('x1',x).attr('x2',x).attr('y1',MARGIN.top).attr('y2',MARGIN.top+iH));
+
+  ticks.forEach(v => {
+    const y = yScale(v);
+    axesG.append('line').attr('class','axis-tick').attr('x1',xJ-4).attr('x2',xJ+4).attr('y1',y).attr('y2',y);
+    axesG.append('text').attr('class','tick-label').attr('x',xJ-8).attr('y',y+3.5).attr('text-anchor','end').text(v);
+    axesG.append('line').attr('class','axis-tick').attr('x1',xT-4).attr('x2',xT+4).attr('y1',y).attr('y2',y);
+    axesG.append('text').attr('class','tick-label').attr('x',xT+8).attr('y',y+3.5).attr('text-anchor','start').text(v);
+  });
+
+  const headers = [
+    [xJ, 'JURY POINTS',   '#2563eb', false],
+    [xM, 'COUNTRIES',     '#6b7280', true ],
+    [xT, 'PUBLIC POINTS', '#059669', false]
+  ];
+  headers.forEach(([x, label, fill, italic]) => {
+    axesG.append('text').attr('class','col-title').attr('fill',fill)
+      .attr('x',x).attr('y',MARGIN.top-30).attr('text-anchor','middle')
+      .attr('font-style', italic?'italic':'normal').text(label);
+  });
+
+  axesG.append('text').attr('fill','#9ca3af').attr('font-size',8).attr('font-family','Inter,sans-serif')
+    .attr('x',xJ-8).attr('y',MARGIN.top-14).attr('text-anchor','end').text('← higher');
+  axesG.append('text').attr('fill','#9ca3af').attr('font-size',8).attr('font-family','Inter,sans-serif')
+    .attr('x',xT+8).attr('y',MARGIN.top-14).attr('text-anchor','start').text('higher →');
+}
+
+const curve = d3.line().curve(d3.curveBasis);
+
+function render() {
+  if (dynG) dynG.remove();
+  dynG = svg.append('g');
+
+  const rows = ALL[year];
+  const n = rows.length;
+  const iH = H - MARGIN.top - MARGIN.bottom;
+
+  const sorted = [...rows].sort((a,b) => b.jury - a.jury);
+  const midY = new Map(sorted.map((d,i) => [d.country, MARGIN.top + i * iH / (n-1)]));
+
+  rows.forEach(d => {
+    const jy = yScale(d.jury);
+    const ty = yScale(d.tele);
+    const my = midY.get(d.country);
+    const c  = col(d);
+    const diff = Math.abs(d.bias);
+    const isExtreme = diff > 100;
+    const sw = isExtreme ? 2 : 1.2;
+    const op = isExtreme ? 0.72 : 0.38;
+
+    const ptsL = [[xJ,jy],[xJ+(xM-xJ)*.38,jy],[xJ+(xM-xJ)*.62,my],[xM,my]];
+    const ptsR = [[xM,my],[xM+(xT-xM)*.38,my],[xM+(xT-xM)*.62,ty],[xT,ty]];
+
+    const pathL = dynG.append('path').datum(ptsL).attr('d',curve)
+      .attr('class','conn').attr('stroke',c).attr('stroke-width',sw).attr('opacity',op).attr('data-c',d.country);
+    const pathR = dynG.append('path').datum(ptsR).attr('d',curve)
+      .attr('class','conn').attr('stroke',c).attr('stroke-width',sw).attr('opacity',op).attr('data-c',d.country);
+
+    [ptsL,ptsR].forEach(pts => {
+      dynG.append('path').datum(pts).attr('d',curve)
+        .attr('fill','none').attr('stroke','transparent').attr('stroke-width',14)
+        .style('cursor','pointer').attr('data-c',d.country)
+        .on('mouseenter', () => { if(selected!==d.country) activate(d,pathL,pathR,dJ,dT,dM,lbl,sw,op); })
+        .on('mouseleave', () => { if(selected!==d.country) deactivate(d,pathL,pathR,dJ,dT,dM,lbl,sw,op); })
+        .on('click', () => onSelect(d,pathL,pathR,dJ,dT,dM,lbl,sw,op));
+    });
+
+    const dJ = dynG.append('circle').attr('class','dot').attr('cx',xJ).attr('cy',jy).attr('r',3.5).attr('fill','#2563eb').attr('opacity',.55).attr('data-c',d.country);
+    const dT = dynG.append('circle').attr('class','dot').attr('cx',xT).attr('cy',ty).attr('r',3.5).attr('fill','#059669').attr('opacity',.55).attr('data-c',d.country);
+    const dM = dynG.append('circle').attr('class','dot').attr('cx',xM).attr('cy',my).attr('r',4).attr('fill',c).attr('opacity',.7).attr('data-c',d.country);
+
+    const lbl = dynG.append('text').attr('class','ctry-label')
+      .attr('x',xM+8).attr('y',my+3.5).attr('text-anchor','start')
+      .attr('font-size',n>25?9:10).attr('data-c',d.country).text(d.country);
+
+    [dJ,dT,dM,lbl].forEach(el => {
+      el.on('mouseenter', () => { if(selected!==d.country) activate(d,pathL,pathR,dJ,dT,dM,lbl,sw,op); })
+        .on('mouseleave', () => { if(selected!==d.country) deactivate(d,pathL,pathR,dJ,dT,dM,lbl,sw,op); })
+        .on('click', () => onSelect(d,pathL,pathR,dJ,dT,dM,lbl,sw,op));
+    });
+  });
+}
+
+function activate(d,pL,pR,dJ,dT,dM,lbl,sw,op) {
+  dynG.selectAll('.conn,.ctry-label,.dot').classed('faded', function() { return this.dataset.c !== d.country; });
+  [pL,pR].forEach(p => p.attr('stroke-width',3).attr('opacity',1));
+  [dJ,dT].forEach(dot => dot.attr('r',5).attr('opacity',1));
+  dM.attr('r',5.5).attr('opacity',1);
+  lbl.attr('font-weight',700).classed('selected',true).classed('faded',false);
+}
+
+function deactivate(d,pL,pR,dJ,dT,dM,lbl,sw,op) {
+  dynG.selectAll('.conn,.ctry-label,.dot').classed('faded',false);
+  [pL,pR].forEach(p => p.attr('stroke-width',sw).attr('opacity',op));
+  dJ.attr('r',3.5).attr('opacity',.55); dT.attr('r',3.5).attr('opacity',.55);
+  dM.attr('r',4).attr('opacity',.7);
+  lbl.attr('font-weight',null).classed('selected',false);
+}
+
+function onSelect(d,pL,pR,dJ,dT,dM,lbl,sw,op) {
+  if (selected===d.country) { selected=null; deactivate(d,pL,pR,dJ,dT,dM,lbl,sw,op); showPH(); }
+  else {
+    dynG.selectAll('.conn,.ctry-label,.dot').classed('faded',false).classed('selected',false).attr('font-weight',null);
+    selected=d.country; activate(d,pL,pR,dJ,dT,dM,lbl,sw,op); showDetail(d);
+  }
+}
+
+function showPH() {
+  document.getElementById('ph').style.display='flex';
+  document.getElementById('cd').style.display='none';
+}
+
+function showDetail(d) {
+  document.getElementById('ph').style.display='none';
+  const cd = document.getElementById('cd');
+  cd.style.display='block';
+
+  const rows = ALL[year];
+  const n = rows.length;
+  const juryRank = [...rows].sort((a,b)=>b.jury-a.jury).findIndex(x=>x.country===d.country)+1;
+  const teleRank = [...rows].sort((a,b)=>b.tele-a.tele).findIndex(x=>x.country===d.country)+1;
+  const c = col(d);
+
+  const juryBarW = (d.jury/MAX_PTS*100).toFixed(1);
+  const teleBarW = (d.tele/MAX_PTS*100).toFixed(1);
+
+  // Bias bar: centred, bias = jury - tele, range roughly -460 to +460
+  const maxBias = 460;
+  const biasBarW = (Math.abs(d.bias)/maxBias*50).toFixed(1);
+  const biasLeft = d.bias >= 0 ? '50%' : (50 - parseFloat(biasBarW))+'%';
+  const biasCol  = d.bias > 0 ? '#2563eb' : '#059669';
+
+  const catVal = cat(d);
+  let divMsg='', divBg='', divFg='';
+  if (catVal==='agree') { divMsg='≈ Jury & public agreed';       divBg='#fefce8'; divFg='#854d0e'; }
+  else if (catVal==='jury') { divMsg=`↑ Jury gave ${Math.abs(d.bias)} pts more`; divBg='#eff6ff'; divFg='#1d4ed8'; }
+  else { divMsg=`↑ Public gave ${Math.abs(d.bias)} pts more`;   divBg='#f0fdf4'; divFg='#166534'; }
+
+  cd.innerHTML = `
+    <h2>${d.country}</h2>
+    <div class="meta">
+      <span class="mk">Year:</span><span>${year}</span>
+      ${d.place ? `<span class="mk">Final place:</span><span>#${d.place} of ${n}</span>` : ''}
+      ${d.performer ? `<span class="mk">Performer:</span><span>${d.performer}</span>` : ''}
+      ${d.song ? `<span class="mk">Song:</span><span>${d.song}</span>` : ''}
+      ${d.yt ? `<span class="mk">YouTube:</span><span><a href="${d.yt}" target="_blank">Watch ↗</a></span>` : ''}
+    </div>
+
+    <div class="div-badge" style="background:${divBg};color:${divFg}">${divMsg}</div>
+
+    <div class="sec">Score Comparison</div>
+    <div class="score-cmp">
+      <div class="score-box" style="background:#eff6ff;border:1px solid #dbeafe">
+        <div class="score-val" style="color:#2563eb">${d.jury}</div>
+        <div class="score-lbl">Jury pts</div>
+      </div>
+      <div class="score-box" style="background:#f0fdf4;border:1px solid #bbf7d0">
+        <div class="score-val" style="color:#059669">${d.tele}</div>
+        <div class="score-lbl">Public pts</div>
+      </div>
+    </div>
+
+    <div class="hbar-row">
+      <span class="hbar-side jury">Jury</span>
+      <div class="hbar-track"><div class="hbar-fill" style="width:${juryBarW}%;background:#2563eb;opacity:.8"></div></div>
+      <span class="hbar-val">${d.jury}</span>
+    </div>
+    <div class="hbar-row">
+      <span class="hbar-side tele">Public</span>
+      <div class="hbar-track"><div class="hbar-fill" style="width:${teleBarW}%;background:#059669;opacity:.8"></div></div>
+      <span class="hbar-val">${d.tele}</span>
+    </div>
+
+    <div class="sec">Bias (jury − public)</div>
+    <div style="font-size:.72rem;color:#6b7280;margin-bottom:6px">
+      ${d.bias > 0 ? `Jury gave <strong style="color:#2563eb">+${d.bias}</strong> more points` :
+        d.bias < 0 ? `Public gave <strong style="color:#059669">+${Math.abs(d.bias)}</strong> more points` :
+        'Jury and public were exactly equal'}
+    </div>
+    <div class="bias-bar-wrap">
+      <div class="bias-bar-track">
+        <div class="bias-zero" style="left:50%"></div>
+        <div class="bias-bar-fill" style="width:${biasBarW}%;left:${biasLeft};background:${biasCol};opacity:.75"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:8px;color:#9ca3af;margin-top:3px">
+        <span>← Public favoured</span><span>Jury favoured →</span>
+      </div>
+    </div>
+
+    <div class="sec">Rankings</div>
+    <div class="rank-row"><span style="color:#2563eb;font-weight:600">Jury rank</span> → <strong>#${juryRank}</strong> of ${n}</div>
+    <div class="rank-row"><span style="color:#059669;font-weight:600">Public rank</span> → <strong>#${teleRank}</strong> of ${n}</div>
+    ${juryRank!==teleRank ? `<div class="rank-row" style="font-size:.72rem;color:#6b7280">
+      Δ ${Math.abs(juryRank-teleRank)} places apart
+      (${juryRank<teleRank?'jury ranked higher':'public ranked higher'})
+    </div>` : ''}
+
+    <div class="sec">Total</div>
+    <div class="rank-row"><span style="font-weight:600">Combined score</span> → <strong>${d.total}</strong> pts</div>
+  `;
+}
+
+function init() { setupDims(); drawAxes(); render(); }
+window.addEventListener('resize', () => { setupDims(); drawAxes(); render(); });
+init();
+</script>
+</body>
+</html>
