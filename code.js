@@ -9,13 +9,13 @@ const regionsOrder = [
   "Other",
 ];
 const regionColors = [
-  "#aec7e8",
-  "#ffbb78",
-  "#ff9896",
-  "#9edae5",
-  "#98df8a",
   "#f7e6a1",
-  "#c5b0d5",
+  "#d0a5a5",
+  "#ffbb78",
+  "#aec7e8",
+  "#b8d8be",
+  "#ff9896",
+  "#c5b0d5"
 ];
 const europeNames = new Set([
   "Albania",
