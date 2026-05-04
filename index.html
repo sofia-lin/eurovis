@@ -146,8 +146,13 @@ body {
   background: white;
   border-radius: 16px;
   padding: 36px;
-  max-width: 700px;
-  width: 100%;
+
+  width: 90%;
+  max-width: 900px;   
+  max-height: 85vh;   
+
+  overflow-y: auto;  
+
   line-height: 1.65;
   box-shadow: 0 20px 60px rgba(0,0,0,.3);
 }
@@ -238,16 +243,50 @@ body {
 <!-- How voting works overlay -->
 <div id="overlay">
   <div id="overlay-box">
-    <div class="eyebrow">2000 – 2015</div>
-    <h2>How Eurovision Voting Worked</h2>
-    <p>During 2000–2015, Eurovision used a combined system where each participating country awarded points (1, 2, 3, 4, 5, 6, 7, 8, 10, 12) to their favourite songs. The breakdown between jury and public televoting evolved over this period.</p>
-    <p>This visualization shows:</p>
+    <div class="eyebrow">2016 – Present</div>
+    <h2>How Eurovision Voting Works</h2>
+
+    <p>
+      The Eurovision Song Contest is an annual international music competition where countries from across Europe (and a few beyond) each submit an original song to be performed live on stage. First held in 1956, it has grown into one of the world’s largest televised events. In the grand final, each country presents one act, and the winner is decided through a combination of votes from national juries and the public.
+    </p>
+
+    <h3>How Voting Works in the Eurovision Final (From 2016 - Present)</h3>
+    <p><em>Note: In 2020, the contest was not held due to the global COVID-19 pandemic.</em></p>
+
+    <p>
+      During the final, every participating country votes for their favorite performances, but they cannot vote for themselves. The voting system has two equally important parts:
+    </p>
+
+    <ol>
+      <li>
+        <strong>Professional Jury Votes</strong><br>
+        Each country has a panel of five music industry professionals. They rank all the songs based on vocal ability, composition, originality, and performance. Their top 10 songs receive points from 1 to 12 (with 12 being the highest).
+      </li>
+      <li>
+        <strong>Public Televote</strong><br>
+        Viewers at home vote via phone, app, or SMS. Like the jury, the public’s top 10 songs receive points from 1 to 12.
+      </li>
+    </ol>
+
+    <p>
+      This means each country gives out two separate sets of points: one from the jury and one from the public.
+    </p>
+
+    <h3>How the Winner Is Decided</h3>
     <ul>
-      <li><strong>Map</strong> — Countries that competed in that year's Grand Final. Gold = winner, blue = finalist. Click to see their performance.</li>
-      <li><strong>Chord diagram</strong> — Voting flows between countries. Each chord shows points given from one country to another, coloured by geographic region. Click a country arc to highlight its flows.</li>
-      <li><strong>Performance preview</strong> — YouTube embed of the selected country's Eurovision performance.</li>
-      <li><strong>Parallel coordinates</strong> — Jury points (left) vs public votes (right) for each country. Lines connect each country to its scores. Hover or click to highlight.</li>
+      <li>Jury points from all countries are announced first</li>
+      <li>Then, the public televotes are added on top</li>
+      <li>The song with the highest combined total wins</li>
     </ul>
+
+    <p>
+      Because juries and the public often have different tastes, the results can reveal interesting patterns:
+    </p>
+    <ul>
+      <li>Songs loved by viewers but not by experts (or vice versa)</li>
+      <li>Regional voting trends between neighboring countries</li>
+    </ul>
+
     <button class="enter-btn" id="enter-btn">Enter Visualization →</button>
   </div>
 </div>
