@@ -298,29 +298,222 @@ Total points: ${d.value}`);
 function renderParallel(scoresWide, contestants){
   const wrap = document.getElementById("par-wrap");
   d3.select("#par-svg").selectAll("*").remove();
+
   const width = wrap.clientWidth;
   const height = wrap.clientHeight;
-
   if (!width || !height) return;
-  const MAX_PTS = 460, CAT_COL = { jury:"#2563eb", tele:"#059669", agree:"#d97706" };
-  const placeByYearCountry = d3.rollup(contestants.filter(d => d.place_final != null && !isNaN(+d.place_final)), v=>+v[0].place_final, d=>+d.year, d=>d.to_country);
-  const rows = scoresWide.filter(d => +d.year === selectedYear).map(d => ({...d, place: (placeByYearCountry.get(+d.year)||new Map()).get(d.country)}));
-  if(!rows.length) return;
-  function cat(d){ const diff=Math.abs(d.bias), mx=Math.max(d.jury,d.tele,1); if(diff<=.12*mx) return "agree"; return d.bias>0?"jury":"tele"; }
-  const colFn=d=>CAT_COL[cat(d)], M={top:45,right:70,bottom:24,left:70};
-  const iW=width-M.left-M.right, iH=height-M.top-M.bottom, xJ=M.left, xM=M.left+iW/2, xT=M.left+iW;
-  const yScale=d3.scaleLinear().domain([0,MAX_PTS]).range([M.top+iH,M.top]);
-  const curve=d3.line().curve(d3.curveBasis);
-  const sorted=[...rows].sort((a,b)=>(a.place||99)-(b.place||99));
-  const midY=new Map(sorted.map((d,i)=>[d.country, M.top + (rows.length===1 ? iH/2 : i*iH/(rows.length-1))]));
-  const svg=d3.select("#par-svg").attr("viewBox",[0,0,width,height]).attr("font-family","sans-serif").style("background","#edf1f7").style("border-radius","8px");
-  for(const v of [0,50,100,150,200,250,300,350,400,450]){ const y=yScale(v); svg.append("line").attr("x1",xJ).attr("x2",xT).attr("y1",y).attr("y2",y).attr("stroke","#e4e9f2"); svg.append("text").attr("x",xJ-8).attr("y",y+3.5).attr("text-anchor","end").attr("fill","#9ca3af").attr("font-size",8).text(v); svg.append("text").attr("x",xT+8).attr("y",y+3.5).attr("fill","#9ca3af").attr("font-size",8).text(v); }
-  for(const x of [xJ,xT]) svg.append("line").attr("x1",x).attr("x2",x).attr("y1",M.top).attr("y2",M.top+iH).attr("stroke","#c8d4e4").attr("stroke-width",1.5);
-  for(const [x,label,fill,italic] of [[xJ,"JURY POINTS","#2563eb",false],[xM,"COUNTRIES","#6b7280",true],[xT,"PUBLIC POINTS","#059669",false]]) svg.append("text").attr("x",x).attr("y",M.top-22).attr("text-anchor","middle").attr("fill",fill).attr("font-size",10).attr("font-weight",700).attr("letter-spacing",".09em").attr("font-style",italic?"italic":"normal").text(label);
-  const g=svg.append("g"), refs=new Map();
-  function applySelection(sel){ for(const [country,r] of refs){ const isSelected=sel===country, isFaded=sel!==null&&!isSelected; r.pathL.attr("stroke-width",isSelected?3:r.sw).attr("opacity",isFaded?.07:isSelected?1:r.op); r.pathR.attr("stroke-width",isSelected?3:r.sw).attr("opacity",isFaded?.07:isSelected?1:r.op); r.dJ.attr("r",isSelected?5:3.5).attr("opacity",isFaded?.1:isSelected?1:.55); r.dT.attr("r",isSelected?5:3.5).attr("opacity",isFaded?.1:isSelected?1:.55); r.dM.attr("r",isSelected?5.5:4).attr("opacity",isFaded?.1:isSelected?1:.7); r.lbl.attr("fill",isFaded?"#c8d0dc":isSelected?r.c:"#374151").attr("font-weight",isSelected?700:null); }}
-  svg.on("click", () => {selectedCountry = null; updateAll(false);});function selectThis(event){event.stopPropagation(); selectCountry(d.country);}
-  for(const d of rows){ const jy=yScale(d.jury), ty=yScale(d.tele), my=midY.get(d.country), c=colFn(d), isExtreme=Math.abs(d.bias)>100, sw=isExtreme?2:1.2, op=isExtreme?.72:.38; const ptsL=[[xJ,jy],[xJ+(xM-xJ)*.38,jy],[xJ+(xM-xJ)*.62,my],[xM,my]], ptsR=[[xM,my],[xM+(xT-xM)*.38,my],[xM+(xT-xM)*.62,ty],[xT,ty]]; const pathL=g.append("path").datum(ptsL).attr("d",curve).attr("fill","none").attr("stroke",c).attr("stroke-width",sw).attr("opacity",op); const pathR=g.append("path").datum(ptsR).attr("d",curve).attr("fill","none").attr("stroke",c).attr("stroke-width",sw).attr("opacity",op); const dJ=g.append("circle").attr("cx",xJ).attr("cy",jy).attr("r",3.5).attr("fill","#2563eb").attr("opacity",.55); const dT=g.append("circle").attr("cx",xT).attr("cy",ty).attr("r",3.5).attr("fill","#059669").attr("opacity",.55); const dM=g.append("circle").attr("cx",xM).attr("cy",my).attr("r",4).attr("fill",c).attr("opacity",.7); const lbl=g.append("text").attr("x",xM+8).attr("y",my+3.5).attr("fill","#374151").attr("font-size",rows.length>25?8:9).text(d.country).style("cursor","pointer"); refs.set(d.country,{pathL,pathR,dJ,dT,dM,lbl,sw,op,c});  for(const pts of [ptsL,ptsR]) g.append("path").datum(pts).attr("d",curve).attr("fill","none").attr("stroke","transparent").attr("stroke-width",14).style("cursor","pointer").on("click",selectThis).on("mouseenter",()=>applySelection(d.country)).on("mouseleave",()=>applySelection(selectedCountry)); lbl.on("click",selectThis).on("mouseenter",()=>applySelection(d.country)).on("mouseleave",()=>applySelection(selectedCountry)); }
+
+  const MAX_PTS = 460;
+  const LINE_COLOR = "#9ecae1";
+  const DOT_COLOR = "#9ecae1";
+
+  const flagMap = {
+    Albania:"al", Armenia:"am", Australia:"au", Austria:"at", Azerbaijan:"az",
+    Belgium:"be", Bulgaria:"bg", Croatia:"hr", Cyprus:"cy", Czechia:"cz",
+    Denmark:"dk", Estonia:"ee", Finland:"fi", France:"fr", Georgia:"ge",
+    Germany:"de", Greece:"gr", Iceland:"is", Ireland:"ie", Israel:"il",
+    Italy:"it", Latvia:"lv", Lithuania:"lt", Malta:"mt", Moldova:"md",
+    Netherlands:"nl", Norway:"no", Poland:"pl", Portugal:"pt", Romania:"ro",
+    Russia:"ru", "San Marino":"sm", Serbia:"rs", Slovenia:"si", Spain:"es",
+    Sweden:"se", Switzerland:"ch", Ukraine:"ua", "United Kingdom":"gb",
+    Belarus:"by", Hungary:"hu", "North Macedonia":"mk"
+  };
+
+  const flagURL = country =>
+    flagMap[country] ? `https://flagcdn.com/w20/${flagMap[country]}.png` : "";
+
+  const placeByYearCountry = d3.rollup(
+    contestants.filter(d => d.place_final != null && !isNaN(+d.place_final)),
+    v => +v[0].place_final,
+    d => +d.year,
+    d => d.to_country
+  );
+
+  const rows = scoresWide
+    .filter(d => +d.year === selectedYear)
+    .map(d => ({
+      ...d,
+      place: (placeByYearCountry.get(+d.year) || new Map()).get(d.country)
+    }));
+
+  if (!rows.length) return;
+
+  const M = { top:45, right:70, bottom:24, left:70 };
+  const iW = width - M.left - M.right;
+  const iH = height - M.top - M.bottom;
+  const xJ = M.left;
+  const xM = M.left + iW / 2;
+  const xT = M.left + iW;
+
+  const yScale = d3.scaleLinear()
+    .domain([0, MAX_PTS])
+    .range([M.top + iH, M.top]);
+
+  const curve = d3.line().curve(d3.curveBasis);
+
+  const sorted = [...rows].sort((a,b) => (a.place || 99) - (b.place || 99));
+  const midY = new Map(
+    sorted.map((d,i) => [
+      d.country,
+      M.top + (rows.length === 1 ? iH / 2 : i * iH / (rows.length - 1))
+    ])
+  );
+
+  const svg = d3.select("#par-svg")
+    .attr("viewBox", [0,0,width,height])
+    .attr("font-family","Inter, sans-serif")
+    .style("background", "#edf1f7")
+    .style("border-radius", "8px");
+
+  for (const v of [0,50,100,150,200,250,300,350,400,450]) {
+    const y = yScale(v);
+    svg.append("line")
+      .attr("x1", xJ).attr("x2", xT)
+      .attr("y1", y).attr("y2", y)
+      .attr("stroke", "#dbeafe");
+
+    svg.append("text")
+      .attr("x", xJ - 8).attr("y", y + 3.5)
+      .attr("text-anchor", "end")
+      .attr("fill", "#9ca3af")
+      .attr("font-size", 8)
+      .text(v);
+
+    svg.append("text")
+      .attr("x", xT + 8).attr("y", y + 3.5)
+      .attr("fill", "#9ca3af")
+      .attr("font-size", 8)
+      .text(v);
+  }
+
+  for (const x of [xJ, xT]) {
+    svg.append("line")
+      .attr("x1", x).attr("x2", x)
+      .attr("y1", M.top).attr("y2", M.top + iH)
+      .attr("stroke", "#c8d4e4")
+      .attr("stroke-width", 1.5);
+  }
+
+  for (const [x,label,fill,italic] of [
+    [xJ,"JURY POINTS","#6b7280",false],
+    [xM,"COUNTRIES","#6b7280",true],
+    [xT,"PUBLIC POINTS","#6b7280",false]
+  ]) {
+    svg.append("text")
+      .attr("x", x)
+      .attr("y", M.top - 22)
+      .attr("text-anchor", "middle")
+      .attr("fill", fill)
+      .attr("font-size", 10)
+      .attr("font-weight", 700)
+      .attr("letter-spacing", ".09em")
+      .attr("font-style", italic ? "italic" : "normal")
+      .text(label);
+  }
+
+  const g = svg.append("g");
+  const refs = new Map();
+
+  function applySelection(sel){
+    for (const [country,r] of refs) {
+      const isSelected = sel === country;
+      const isFaded = sel !== null && !isSelected;
+
+      r.pathL.attr("stroke", LINE_COLOR).attr("stroke-width", isSelected ? 3 : r.sw).attr("opacity", isFaded ? .07 : isSelected ? 1 : r.op);
+      r.pathR.attr("stroke", LINE_COLOR).attr("stroke-width", isSelected ? 3 : r.sw).attr("opacity", isFaded ? .07 : isSelected ? 1 : r.op);
+
+      r.dJ.attr("fill", DOT_COLOR).attr("r", isSelected ? 5 : 3.5).attr("opacity", isFaded ? .1 : isSelected ? 1 : .55);
+      r.dT.attr("fill", DOT_COLOR).attr("r", isSelected ? 5 : 3.5).attr("opacity", isFaded ? .1 : isSelected ? 1 : .55);
+
+      r.flag
+        .attr("width", isSelected ? 16 : 12)
+        .attr("height", isSelected ? 16 : 12)
+        .attr("x", xM - (isSelected ? 8 : 6))
+        .attr("y", r.my - (isSelected ? 8 : 6))
+        .attr("opacity", isFaded ? .18 : 1);
+
+      r.lbl
+        .attr("fill", isFaded ? "#c8d0dc" : "#374151")
+        .attr("font-weight", isSelected ? 700 : null);
+    }
+  }
+
+  svg.on("click", () => {
+    selectedCountry = null;
+    applySelection(null);
+  });
+
+  for (const d of rows) {
+    const jy = yScale(d.jury);
+    const ty = yScale(d.tele);
+    const my = midY.get(d.country);
+    const isExtreme = Math.abs(d.bias) > 100;
+    const sw = isExtreme ? 2 : 1.2;
+    const op = isExtreme ? .72 : .38;
+
+    const ptsL = [[xJ,jy],[xJ+(xM-xJ)*.38,jy],[xJ+(xM-xJ)*.62,my],[xM,my]];
+    const ptsR = [[xM,my],[xM+(xT-xM)*.38,my],[xM+(xT-xM)*.62,ty],[xT,ty]];
+
+    const pathL = g.append("path").datum(ptsL).attr("d", curve)
+      .attr("fill", "none").attr("stroke", LINE_COLOR).attr("stroke-width", sw).attr("opacity", op);
+
+    const pathR = g.append("path").datum(ptsR).attr("d", curve)
+      .attr("fill", "none").attr("stroke", LINE_COLOR).attr("stroke-width", sw).attr("opacity", op);
+
+    const dJ = g.append("circle")
+      .attr("cx", xJ).attr("cy", jy).attr("r", 3.5)
+      .attr("fill", DOT_COLOR).attr("opacity", .55);
+
+    const dT = g.append("circle")
+      .attr("cx", xT).attr("cy", ty).attr("r", 3.5)
+      .attr("fill", DOT_COLOR).attr("opacity", .55);
+
+    const flag = g.append("image")
+      .attr("x", xM - 6)
+      .attr("y", my - 6)
+      .attr("width", 12)
+      .attr("height", 12)
+      .attr("href", flagURL(d.country))
+      .style("cursor", "pointer");
+
+    const lbl = g.append("text")
+      .attr("x", xM + 10)
+      .attr("y", my + 3.5)
+      .attr("fill", "#374151")
+      .attr("font-size", rows.length > 25 ? 8 : 9)
+      .text(d.country)
+      .style("cursor", "pointer");
+
+    refs.set(d.country, { pathL, pathR, dJ, dT, flag, lbl, sw, op, my });
+
+    function selectThis(event){
+      event.stopPropagation();
+      selectedCountry = selectedCountry === d.country ? null : d.country;
+      applySelection(selectedCountry);
+    }
+
+    for (const pts of [ptsL, ptsR]) {
+      g.append("path")
+        .datum(pts)
+        .attr("d", curve)
+        .attr("fill", "none")
+        .attr("stroke", "transparent")
+        .attr("stroke-width", 14)
+        .style("cursor", "pointer")
+        .on("click", selectThis)
+        .on("mouseenter", () => applySelection(d.country))
+        .on("mouseleave", () => applySelection(selectedCountry));
+    }
+
+    flag.on("click", selectThis)
+      .on("mouseenter", () => applySelection(d.country))
+      .on("mouseleave", () => applySelection(selectedCountry));
+
+    lbl.on("click", selectThis)
+      .on("mouseenter", () => applySelection(d.country))
+      .on("mouseleave", () => applySelection(selectedCountry));
+  }
+
   applySelection(selectedCountry);
 }
 
